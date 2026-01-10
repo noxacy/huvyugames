@@ -4,7 +4,7 @@ import os
 import asyncio
 
 pygame.init()
-W, H = 1920, 1080
+W, H = 1280, 720
 w = pygame.display.set_mode((W, H))
 running = True
 clock = pygame.time.Clock()
