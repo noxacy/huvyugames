@@ -475,12 +475,15 @@ def draw(dt):
     pygame.display.flip()
 
 async def main():
-    dt = clock.tick(maxfps)/1000
-    game.next_ev(dt)
-    events(dt)
-    draw(dt)
-
-    await asyncio.sleep(0)
-
+    global running 
+    while running:
+        dt = clock.tick(maxfps) / 1000.0
+        game.next_ev(dt)
+        events(dt)
+        draw(dt)
+        await asyncio.sleep(0)
+        
+asyncio.run(main())
+pygame.quit()
 asyncio.run(main())
 pygame.quit()
