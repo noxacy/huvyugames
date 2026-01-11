@@ -1,9 +1,4 @@
-import pygame
-import json
-import os
-import asyncio
-import random
-
+import pygame, json, os, asyncio, random
 pygame.init()
 Info = pygame.display.Info()
 W, H = 1920, 1080
@@ -67,34 +62,22 @@ class Game:
     def next_ev(self, dt):
         if self.end:
             return
-        
         if self.waittime <= 0:
-            # --- WAVE TRANSITION ---
             if self.ev == -1:
-                # 1. Give money for the wave that just COMPLETED
                 if self.wave > 0:
                     prev_wave_data = route[f"wave{self.wave}"]
                     self.inc_money(prev_wave_data[-1][1])
-                
-                # 2. Increment to the NEXT wave
                 self.wave += 1
-                
-                # 3. Check if the next wave exists
                 current_wave_key = f"wave{self.wave}"
                 if current_wave_key not in route:
                     self.end = True
                     return
-                
-                # 4. Setup the first event of the new wave
                 self.ev = 0
                 wave_data = route[current_wave_key]
                 self.quant = wave_data[self.ev]["quantity"]
                 return 
-
-            # --- SPAWNING LOGIC ---
             wave_data = route[f"wave{self.wave}"]
             current_event = wave_data[self.ev]
-
             if isinstance(current_event, dict):
                 self.candrawskip = False
                 if self.quant > 0:
@@ -103,16 +86,13 @@ class Game:
                     self.quant -= 1
                 else:
                     self.ev += 1
-                    # Prepare the next event in the same wave
                     next_event = wave_data[self.ev]
                     if isinstance(next_event, dict):
                         self.quant = next_event["quantity"]
-            
             elif isinstance(current_event, list):
-                # This is the [wait_time, reward] list at the end of a wave
                 self.candrawskip = True
                 self.waittime = current_event[0]
-                self.ev = -1 # Triggers wave increment on next cycle
+                self.ev = -1
         else:
             self.waittime -= dt
 
@@ -162,40 +142,30 @@ class Enemy:
             self.process = 0
             self.hidden = full.get("hidden", False)
             
-            # --- NEW: Spawning Attributes ---
             self.attributes = full.get("attributes", {})
             self.spawn_timer = 0
-            self.spawn_queue = 0  # Number of enemies waiting to be "born"
+            self.spawn_queue = 0
             self.spawn_delay_timer = 0
-            # If the enemy has a repeating spawn (like Witch)
             if "spawn" in self.attributes:
                 self.spawn_timer = self.attributes["spawn"]["cooldown"]
         else:
             raise ValueError(f"\"{enemy}\" enemy is not in enemy templates.")
 
     def step(self, dt):
-        # --- Witch Spawning Logic ---
         if "spawn" in self.attributes:
             spawn_data = self.attributes["spawn"]
-            
-            # 1. Handle the long cooldown between batches
             self.spawn_timer -= dt
             if self.spawn_timer <= 0:
                 self.spawn_queue = spawn_data["quantity"]
                 self.spawn_timer = spawn_data["cooldown"]
-
-            # 2. Handle spawning the individual units from the queue
             if self.spawn_queue > 0:
                 self.spawn_delay_timer -= dt
                 if self.spawn_delay_timer <= 0:
-                    # Actually spawn the unit
                     new_enemy = Enemy(spawn_data["name"])
                     new_enemy.x, new_enemy.y = self.x, self.y
                     new_enemy.idx = self.idx
                     new_enemy.process = self.process
                     enemies.append(new_enemy)
-                    
-                    # Reduce queue and reset the small delay (spawnrate)
                     self.spawn_queue -= 1
                     self.spawn_delay_timer = spawn_data["spawnrate"]
 
@@ -203,7 +173,7 @@ class Enemy:
             self.idx += 1
             self.nt = False
         if self.idx + 1 > len(game.map):
-            if self in enemies: enemies.remove(self) # Safety check
+            if self in enemies: enemies.remove(self)
             base.decrease_hp(self.hp)
             return
         
@@ -232,21 +202,14 @@ class Enemy:
         game.inc_money(namount)
         
         if self.hp <= 0:
-            # --- Random Death Spawn Logic ---
             if "death_spawn" in self.attributes:
                 spawn_list = self.attributes["death_spawn"]
-                # Pick ONE random name from the list in your JSON
                 random_enemy_name = random.choice(spawn_list)
-                
                 new_enemy = Enemy(random_enemy_name)
-                # Sync position and progress so they don't restart the map
                 new_enemy.x, new_enemy.y = self.x, self.y
                 new_enemy.idx = self.idx
                 new_enemy.process = self.process
                 enemies.append(new_enemy)
-            
-            # Use a try/except or safety check to prevent crash if 
-            # multiple towers kill the same enemy in 1 frame
             if self in enemies:
                 enemies.remove(self)
 phtower = 0
@@ -549,8 +512,14 @@ def draw(dt):
 
 async def main():
     global running 
+    import platform
+    if platform.system() == "Emscripten":
+        import js
+        js.window.eval("window.is_background_active = true;")
     while running:
         dt = clock.tick(maxfps) / 1000.0
+        dt = min(dt, 0.1) 
+        
         game.next_ev(dt)
         events(dt)
         draw(dt)
@@ -558,5 +527,3 @@ async def main():
 
 asyncio.run(main())
 pygame.quit()
-
-#abfb
