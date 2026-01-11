@@ -82,7 +82,7 @@ class Game:
     def __init__(self):
         global gui, route
         self.map = [(W/4, H), (W/4, H/5), (W/4*3, H/5), (W/4*3, H/5*4), (W/2, H/5*4), (W/2, H/5*2), (W, H/5*2)]
-        self.money = 55000000
+        self.money = 550
         self.text_cache = {}
         self.waittime = 0
         self.quant = 0
