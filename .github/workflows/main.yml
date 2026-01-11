@@ -11,27 +11,36 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+          - uses: actions/checkout@v3
 
-      - name: Build Tower Defense
-        run: |
-          python -m pygbag --build td/
-          
-      - name: Prepare Deployment Folder
-        run: |
-          # 1. Create a temporary folder to hold the final website structure
-          mkdir -p deploy
-          
-          # 2. Copy your main menu index.html to the root of the deploy folder
-          cp index.html deploy/
-          
-          # 3. Copy the compiled game into a 'td' folder within deploy
-          # Pygbag puts the build inside the project folder (td/build/web)
-          mkdir -p deploy/td
-          cp -r td/build/web/* deploy/td/
+          # 1. Set up Python environment
+          - name: Set up Python
+            uses: actions/setup-python@v4
+            with:
+              python-version: '3.11'
 
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: deploy # We deploy the custom 'deploy' folder we just made
-          branch: gh-pages
+          # 2. Install pygbag and dependencies
+          - name: Install dependencies
+            run: |
+              python -m pip install --upgrade pip
+              python -m pip install pygbag black
+
+          # 3. Build the game
+          - name: Build Tower Defense
+            run: |
+              python -m pygbag --build -td/
+              
+          # 4. Assemble the Arcade (Menu + Game)
+          - name: Prepare Deployment Folder
+            run: |
+              mkdir -p deploy
+              cp index.html deploy/
+              mkdir -p deploy/td
+              cp -r td/build/web/* deploy/td/
+
+          # 5. Deploy
+          - name: Deploy to GitHub Pages
+            uses: JamesIves/github-pages-deploy-action@v4
+            with:
+              folder: deploy
+              branch: gh-pages
