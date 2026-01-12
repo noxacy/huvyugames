@@ -14,7 +14,7 @@ smallboximg = pygame.image.load("./assets/SmallBox.png").convert_alpha()
 font = pygame.font.Font("./assets/ByteBounce.ttf", 50)
 font_med = pygame.font.Font("./assets/ByteBounce.ttf", 35)
 font_small = pygame.font.Font("./assets/ByteBounce.ttf", 25)
-clicksound = pygame.mixer.Sound("./assets/lmb.mp3")
+clicksound = pygame.mixer.Sound("./assets/lmb.ogg")
 
 class Particle:
     def __init__(self, x, y, text):
