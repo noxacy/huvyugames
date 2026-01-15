@@ -2,7 +2,7 @@ name: Deploy Pygame to GitHub Pages
 
 on:
   push:
-    branches: [ main ]  # Runs every time you push to main
+    branches: [ main ]  # Main branch'e her push yaptığında çalışır
 
 permissions:
   contents: write
@@ -26,37 +26,41 @@ jobs:
 
       - name: Build and Organize All Games
         run: |
+          # Önce ana dağıtım klasörünü oluştur ve ana sayfaları kopyala
           mkdir -p deploy
-          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/
+          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ 2>/dev/null || true
           
           for dir in */; do
             dirname=${dir%/}
             
-            if [ "$dirname" == "deploy" ] || [ "$dirname" == ".github" ]; then
+            # Gereksiz klasörleri atla
+            if [ "$dirname" == "deploy" ] || [ "$dirname" == ".github" ] || [ "$dirname" == "build" ]; then
               continue
             fi
 
             if [ -f "$dirname/main.py" ]; then
               echo "Building game in folder: $dirname"
               
+              # Pygbag build işlemini başlat
               python -m pygbag --build "$dirname/"
-
-              # --- NAVIGATOR FIX STARTS HERE ---
-              echo "Patching navigator.userAgentData error in $dirname"
-              find "deploy/$dirname" -name "*.js" -exec sed -i 's/navigator.userAgentData.mobile/(\/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
-              find "deploy/$dirname" -name "*.html" -exec sed -i 's/navigator.userAgentData.mobile/(\/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
-              # --- NAVIGATOR FIX ENDS HERE --- 
               
+              # Hedef klasörü oluştur ve build sonuçlarını taşı
               mkdir -p "deploy/$dirname"
-              cp -r "$dirname/build/web/"* "deploy/$dirname/"
+              if [ -d "$dirname/build/web" ]; then
+                cp -r "$dirname/build/web/"* "deploy/$dirname/"
+                
+                # --- NAVIGATOR FIX (HATA GİDERİCİ) ---
+                # Dosyalar taşındıktan sonra navigator.userAgentData hatasını yamalıyoruz
+                echo "Patching navigator.userAgentData error in deploy/$dirname"
+                find "deploy/$dirname" -name "*.js" -exec sed -i 's/navigator.userAgentData.mobile/(\/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
+                find "deploy/$dirname" -name "*.html" -exec sed -i 's/navigator.userAgentData.mobile/(\/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
+              fi
               
-              # --- THE FIX STARTS HERE ---
-              # Copy the thumbnail and any other images from the game folder
-              # '|| true' prevents the script from crashing if no images exist
+              # Ekstra resimleri ve thumbnail'ı kopyala
               cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.jpg "deploy/$dirname/" 2>/dev/null || true
-              # --- THE FIX ENDS HERE ---
 
+              # Eğer özel bir play.html varsa onu da taşı
               if [ -f "$dirname/${dirname}_play.html" ]; then
                 cp "$dirname/${dirname}_play.html" "deploy/$dirname/"
               fi
