@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: ambassadors-of-game-dev/setup-python@v4
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
@@ -22,33 +22,36 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pygbag --upgrade
+          python -m pip install numpy
 
       - name: Build and Organize
         run: |
-          # Dağıtım klasörünü temizle ve oluştur
+          # 1. Dağıtım klasörünü oluştur
           mkdir -p deploy
           
-          # Kök dizindeki HTML ve diğer dosyaları kopyala
+          # 2. Kök dizindeki dosyaları koru (index, ads, privacy vb.)
           cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ 2>/dev/null || true
           
-          # Klasörleri tek tek tara (aclicker, projectx, td)
+          # 3. Her oyun klasörü için build al
           for dir in aclicker projectx td; do
             if [ -d "$dir" ] && [ -f "$dir/main.py" ]; then
-              echo "Building: $dir"
+              echo "--- BUILDING: $dir ---"
               
-              # Pygbag build
+              # Pygbag build işlemini başlat
               python -m pygbag --build --no_opt "$dir/"
               
-              # Build sonuçlarını deploy/klasör_adı altına taşı
+              # Oyunun kendi klasörünü deploy içinde oluştur
               mkdir -p "deploy/$dir"
+              
+              # Build sonucunda oluşan her şeyi (index.html, .js, .apk vs.) kopyala
               if [ -d "$dir/build/web" ]; then
                 cp -r "$dir/build/web/"* "deploy/$dir/"
                 
-                # Navigator Yama İşlemi (JavaScript hatasını önlemek için)
+                # Navigator Yama (JS Hatasını çözmek için şart)
                 find "deploy/$dir" -type f \( -name "*.js" -o -name "*.html" \) -exec sed -i 's/navigator.userAgentData.mobile/(navigator.userAgentData \&\& navigator.userAgentData.mobile ? navigator.userAgentData.mobile : \/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
               fi
               
-              # JSON ve Resim dosyalarını taşı
+              # JSON ve Resim dosyalarını unutma (pygbag bazen bunları dışarıda bırakır)
               cp "$dir"/*.json "$dir"/*.png "$dir"/*.jpg "deploy/$dir/" 2>/dev/null || true
             fi
           done
