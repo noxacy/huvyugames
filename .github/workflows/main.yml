@@ -2,7 +2,7 @@ name: Deploy Pygame to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]  # Runs every time you push to main
 
 permissions:
   contents: write
@@ -21,50 +21,46 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pygbag --upgrade
+          python -m pip install pygbag black
           python -m pip install numpy
 
-      - name: Build and Organize
+      - name: Build and Organize All Games
         run: |
-          # 1. Dağıtım klasörünü oluştur
           mkdir -p deploy
+          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/
           
-          # 2. Kök dizindeki ana web dosyalarını kopyala
-          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ 2>/dev/null || true
-          
-          # 3. Her oyun klasörü için build al (aclicker, projectx, td)
-          for dir in aclicker projectx td; do
-            if [ -d "$dir" ] && [ -f "$dir/main.py" ]; then
-              echo "--- BUILDING GAME: $dir ---"
+          for dir in */; do
+            dirname=${dir%/}
+            
+            if [ "$dirname" == "deploy" ] || [ "$dirname" == ".github" ]; then
+              continue
+            fi
+
+            if [ -f "$dirname/main.py" ]; then
+              echo "Building game in folder: $dirname"
               
-              # Pygbag build: Bu komut build/web klasörünü oluşturur
-              python -m pygbag --build --no_opt "$dir/"
+              python -m pygbag --build "$dirname/"
               
-              # Hedef klasörü oluştur
-              mkdir -p "deploy/$dir"
+              mkdir -p "deploy/$dirname"
+              cp -r "$dirname/build/web/"* "deploy/$dirname/"
               
-              # Pygbag'in ürettiği her şeyi (index.html, .js, .data vb.) taşı
-              if [ -d "$dir/build/web" ]; then
-                cp -r "$dir/build/web/"* "deploy/$dir/"
-                
-                # ÖNEMLİ: Kendi HTML dosyanı (örn: projectx_play.html) index.html olarak kopyala
-                # Çünkü pygbag runtime'ı index.html üzerinden çalışmaya ayarlıdır.
-                if [ -f "$dir/${dir}_play.html" ]; then
-                  cp "$dir/${dir}_play.html" "deploy/$dir/index.html"
-                fi
-                
-                # Navigator Yama (Hata giderici)
-                find "deploy/$dir" -type f \( -name "*.js" -o -name "*.html" \) -exec sed -i 's/navigator.userAgentData.mobile/(navigator.userAgentData \&\& navigator.userAgentData.mobile ? navigator.userAgentData.mobile : \/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
+              # --- THE FIX STARTS HERE ---
+              # Copy the thumbnail and any other images from the game folder
+              # '|| true' prevents the script from crashing if no images exist
+              cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
+              cp "$dirname"/*.jpg "deploy/$dirname/" 2>/dev/null || true
+              # --- THE FIX ENDS HERE ---
+
+              if [ -f "$dirname/${dirname}_play.html" ]; then
+                cp "$dirname/${dirname}_play.html" "deploy/$dirname/"
               fi
-              
-              # JSON ve Resim gibi yan dosyaları doğrudan klasöre kopyala
-              cp "$dir"/*.json "$dir"/*.png "$dir"/*.jpg "deploy/$dir/" 2>/dev/null || true
             fi
           done
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages
           folder: deploy
-          clean: true
+          branch: gh-pages
+
+          
