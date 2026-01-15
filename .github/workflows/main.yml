@@ -2,7 +2,7 @@ name: Deploy Pygame to GitHub Pages
 
 on:
   push:
-    branches: [ main ]  # Runs every time you push to main
+    branches: [ main ]  # Ana branch'e kod gönderdiğinde çalışır
 
 permissions:
   contents: write
@@ -21,38 +21,48 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pygbag black
+          python -m pip install pygbag --upgrade
           python -m pip install numpy
 
       - name: Build and Organize All Games
         run: |
+          # Ana dağıtım klasörünü oluştur ve ana sayfaları kopyala
           mkdir -p deploy
-          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/
+          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ 2>/dev/null || true
           
           for dir in */; do
             dirname=${dir%/}
             
-            if [ "$dirname" == "deploy" ] || [ "$dirname" == ".github" ]; then
+            # Sistem klasörlerini atla
+            if [ "$dirname" == "deploy" ] || [ "$dirname" == ".github" ] || [ "$dirname" == "build" ]; then
               continue
             fi
 
             if [ -f "$dirname/main.py" ]; then
               echo "Building game in folder: $dirname"
               
-              python -m pygbag --build "$dirname/"
+              # Pygbag build işlemini başlat
+              python -m pygbag --build --no_opt "$dirname/"
               
+              # Hedef klasörü oluştur ve build sonuçlarını taşı
               mkdir -p "deploy/$dirname"
-              cp -r "$dirname/build/web/"* "deploy/$dirname/"
+              if [ -d "$dirname/build/web" ]; then
+                cp -r "$dirname/build/web/"* "deploy/$dirname/"
+                
+                # --- NAVIGATOR FIX (KESİN ÇÖZÜM) ---
+                # Tarayıcılarda 'navigator.userAgentData' bulunamadığında oluşan hatayı yamalıyoruz.
+                echo "Patching navigator.userAgentData error in deploy/$dirname"
+                
+                # Hem JS hem HTML dosyaları içinde hatalı kodu bulup güvenli kontrolle değiştirir.
+                find "deploy/$dirname" -type f \( -name "*.js" -o -name "*.html" \) -exec sed -i 's/navigator.userAgentData.mobile/(navigator.userAgentData \&\& navigator.userAgentData.mobile ? navigator.userAgentData.mobile : \/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
+              fi
               
-              # --- THE FIX STARTS HERE ---
-              # Copy the thumbnail and any other images from the game folder
-              # '|| true' prevents the script from crashing if no images exist
-              cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
-              cp "$dirname"/*.jpg "deploy/$dirname/" 2>/dev/null || true
-              # --- THE FIX ENDS HERE ---
+              # Varsa ek dosyaları (resim, json vs.) kopyala
+              cp "$dirname"/*.png "$dirname"/*.jpg "$dirname"/*.json "deploy/$dirname/" 2>/dev/null || true
 
+              # Eğer özel bir play.html varsa onu index.html olarak ayarla (isteğe bağlı)
               if [ -f "$dirname/${dirname}_play.html" ]; then
-                cp "$dirname/${dirname}_play.html" "deploy/$dirname/"
+                cp "$dirname/${dirname}_play.html" "deploy/$dirname/index.html"
               fi
             fi
           done
@@ -60,7 +70,6 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: deploy
           branch: gh-pages
-
-          
+          folder: deploy
+          clean: true
