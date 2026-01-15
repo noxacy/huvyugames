@@ -26,8 +26,6 @@ jobs:
 
       - name: Build and Organize All Games
         run: |
-          rm -rf */build
-          rm -rf deploy
           mkdir -p deploy
           cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/
           
