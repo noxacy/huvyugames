@@ -40,6 +40,10 @@ jobs:
               echo "Building game in folder: $dirname"
               
               python -m pygbag --build "$dirname/"
+
+              echo "Patching navigator.userAgentData error in $dirname"
+              find "deploy/$dirname" -name "*.js" -exec sed -i 's/navigator.userAgentData.mobile/(\/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
+              find "deploy/$dirname" -name "*.html" -exec sed -i 's/navigator.userAgentData.mobile/(\/Mobi|Android|iPhone\/i.test(navigator.userAgent))/g' {} +
               
               mkdir -p "deploy/$dirname"
               cp -r "$dirname/build/web/"* "deploy/$dirname/"
@@ -62,5 +66,3 @@ jobs:
         with:
           folder: deploy
           branch: gh-pages
-
-          
