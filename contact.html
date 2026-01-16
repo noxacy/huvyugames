@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Us | Huvyu Games</title>
+    <style>
+        body { background-color: #0f1015; color: #a1a1a1; font-family: sans-serif; line-height: 1.6; padding: 40px; max-width: 600px; margin: auto; }
+        h1 { color: white; border-bottom: 2px solid #2a68ae; padding-bottom: 10px; }
+        form { background: #1b1c22; padding: 30px; border-radius: 12px; display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        label { color: white; font-weight: bold; }
+        input, textarea { background: #0f1015; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; font-size: 1rem; }
+        input:focus, textarea:focus { border-color: #2a68ae; outline: none; }
+        button { background: #2a68ae; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #3a79bf; transform: translateY(-2px); }
+        a { color: #2a68ae; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>Contact Us</h1>
+    <p>Have a bug report or a game suggestion? Send us a message!</p>
+
+    <form action="https://formspree.io/f/xaqqwrbg" method="POST">
+        <label>Your Email:</label>
+        <input type="email" name="email" placeholder="email@example.com" required>
+        
+        <label>Message:</label>
+        <textarea name="message" rows="5" placeholder="Tell us what's on your mind..." required></textarea>
+        
+        <input type="hidden" name="_next" value="https://noxacy.github.io/huvyugames/index.html">
+        
+        <button type="submit">Send Message</button>
+    </form>
+
+    <a href="index.html" class="back-link">← Back to Home</a>
+</body>
+</html>
