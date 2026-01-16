@@ -2,7 +2,7 @@ name: Deploy Pygame to GitHub Pages
 
 on:
   push:
-    branches: [ main ]  # main branch'e her push sonrası çalışacak
+    branches: [ main ]
 
 permissions:
   contents: write
@@ -12,30 +12,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Kodları çek
       - uses: actions/checkout@v3
 
-      # Python 3.11 kur
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      # Gerekli paketleri kur
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install pygbag==0.9.0
           python -m pip install numpy
 
-      # Oyunları build et ve deploy klasörüne kopyala
       - name: Build and Organize All Games
         run: |
           rm -rf */build
           rm -rf deploy
           mkdir -p deploy
           
-          # Tüm oyun klasörlerini dolaş
+          # Oyun klasörlerini dolaş
           for dir in */; do
             dirname=${dir%/}
             if [ "$dirname" == "deploy" ] || [ "$dirname" == ".github" ]; then
@@ -45,47 +41,37 @@ jobs:
             if [ -f "$dirname/main.py" ]; then
               echo "Building game in folder: $dirname"
 
-              # pygbag ile build
               python -m pygbag --build "$dirname/"
 
-              # deploy klasörüne kopyala
               mkdir -p "deploy/$dirname"
               cp -r "$dirname/build/web/"* "deploy/$dirname/"
 
-              # resimleri kopyala
+              # Resimleri ve _play.html kopyala
               cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.jpg "deploy/$dirname/" 2>/dev/null || true
-
-              # özel play html varsa kopyala
               if [ -f "$dirname/${dirname}_play.html" ]; then
                 cp "$dirname/${dirname}_play.html" "deploy/$dirname/"
               fi
 
-              # --- PATCH: index.html dosyasına doctype ve navigator patch ekle ---
+              # --- PATCH: index.html ---
               INDEX_FILE="deploy/$dirname/index.html"
-
-              # Eğer index.html varsa işle
               if [ -f "$INDEX_FILE" ]; then
-                # geçici dosya
                 TMP_FILE="$INDEX_FILE.tmp"
-
-                # ilk satır: DOCTYPE, sonra navigator patch, sonra orijinal index
                 echo "<!DOCTYPE html>" > "$TMP_FILE"
                 echo "<script>
                 if (typeof navigator.userAgentData === 'undefined') {
                     navigator.userAgentData = { mobile: false };
                 }
+                window.addEventListener('load', () => {
+                    if (typeof py_init === 'function') { py_init(); }
+                });
                 </script>" >> "$TMP_FILE"
-
-                # Orijinal index'i ekle, head tag’ini bulmadan ekle
                 tail -n +1 "$INDEX_FILE" >> "$TMP_FILE"
-
                 mv "$TMP_FILE" "$INDEX_FILE"
               fi
             fi
           done
 
-      # GitHub Pages'e deploy et
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
