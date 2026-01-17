@@ -747,7 +747,10 @@ def draw(dt):
             game.cached_draw(towerupgradesurf, font2, selected.upgs[selected.lvl]["desc"], "#000000", (UW/2, (UH/5)*2), True)
             pygame.draw.rect(towerupgradesurf, "#00aa00", towerupgradebutton)
             game.cached_draw(towerupgradesurf, font1, selected.nextupgradeprice, "#000000", towerupgradebutton.center, True)
-        game.cached_draw(towerupgradesurf, font2, f"total damage: {selected.totaldmg}", "#000000", (UW/2, (UH/5)*2.5), True)
+        if tower.is_money_tower:
+            game.cached_draw(towerupgradesurf, font2, f"income: {selected.dmg}", "#000000", (UW/2, (UH/5)*2.5), True)
+        else:
+            game.cached_draw(towerupgradesurf, font2, f"damage: {selected.dmg}", "#000000", (UW/2, (UH/5)*2.5), True)
         pygame.draw.rect(towerupgradesurf, "#aa0000", towersellbutton)
         game.cached_draw(towerupgradesurf, font2, selected.sellprice, "#000000", towersellbutton, True)
         w.blit(towerupgradesurf, towerupgradespos)

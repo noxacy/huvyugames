@@ -38,7 +38,7 @@
                 {
                     "range": 800,
                     "name": "Radio Tower",
-                    "desc": "Hidden detection",
+                    "desc": "Increases damage, range",
                     "price": 2500,
                     "damage": 3
                 }
