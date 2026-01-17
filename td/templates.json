@@ -518,7 +518,7 @@
             "attributes": {"spawn": {"name": "Shadow", "cooldown": 5, "quantity": 2, "spawnrate": 1}}
         },
         "Hyper Swift": {
-            "maxhealth": 150,
+            "maxhealth": 100,
             "size": 25,
             "color": "#ff00ff",
             "speed": 200
