@@ -521,7 +521,7 @@
             "attributes": {"death_spawn": ["CEO", "Shadow Leader", "Witch"]}
         },
         "The Singularity": {
-            "maxhealth": 500000,
+            "maxhealth": 250000,
             "size": 150,
             "color": "#1a0033",
             "speed": 3,
