@@ -299,18 +299,16 @@ class Block:
 
 def get_joy_axis():
     if not is_touching: return [0, 0]
+    # Koordinatları JOY_CENTER'a göre normalize et
     dx = joy_pos[0] - JOY_CENTER[0]
     dy = joy_pos[1] - JOY_CENTER[1]
-    return [dx/JOY_RADIUS, dy/JOY_RADIUS]
-    try:
-        finger = pygame._sdl2.touch.get_finger(pygame._sdl2.touch.get_device(0), touch_id)
-        if not finger: return [0, 0]
-        fx, fy = finger['x'] * W, finger['y'] * H
-        dist = math.hypot(dx, dy)
-        if dist > JOY_RADIUS: dx, dy = dx/dist * JOY_RADIUS, dy/dist * JOY_RADIUS
-        joy_pos = [JOY_CENTER[0] + dx, JOY_CENTER[1] + dy]
-        return [dx/JOY_RADIUS, dy/JOY_RADIUS]
-    except: return [0,0]
+    dist = math.hypot(dx, dy)
+    if dist == 0: return [0, 0]
+    
+    # Joystick sınırlarını aşmasın
+    max_dist = JOY_RADIUS
+    clamped_dist = min(dist, max_dist)
+    return [dx / max_dist * (clamped_dist / dist), dy / max_dist * (clamped_dist / dist)]
 
 text_cache = {}
 def cached_draw(text, color, position, center=False):
@@ -416,6 +414,22 @@ async def main():
         for e in events:
             if e.type == pygame.QUIT: running = False; break
             
+            if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION]:
+                is_mobile = True
+                # pygame-web'de e.x ve e.y 0 ile 1 arasındadır, W ve H ile çarpılmalıdır
+                fx, fy = e.x * W, e.y * H
+                if e.type == pygame.FINGERDOWN:
+                    # MENÜ Butonu Kontrolü (Oyun içindeyken)
+                    if state == "GAME" and BTN_ESC.collidepoint(fx, fy):
+                        pygame.mixer.music.stop(); state = "MENU"
+                    
+                    # Joystick Başlatma
+                    if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
+                        is_touching = True
+                        touch_id = e.finger_id
+                
+        if is_touching and e.finger_id == touch_id:
+            joy_pos[0], joy_pos[1] = fx, fy
             # --- JSON GİRİŞ MODU ---
             if input_active:
                 if e.type == pygame.KEYDOWN:
