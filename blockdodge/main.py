@@ -384,23 +384,20 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, shake=0, dam
     pygame.display.flip()
 
 async def main():
-    global running, hp, dmgcd, objects, state, current_song_path, route, TOTAL_TIME, is_mobile, game_mode, time_scale, is_1hp, is_zen, input_active, input_text, custom_route, pygame, shake_amount, joy_pos, show_joystick
+    global running, hp, dmgcd, objects, state, current_song_path, route, TOTAL_TIME, is_mobile, game_mode, time_scale, is_1hp, is_zen, input_active, input_text, custom_route, pygame, shake_amount, joy_pos, show_joystick, is_touching
     screen = pygame.display.set_mode((1280, 720))
     player = Player(W//2, H//2, 25)
     route_index, music_time = 0, 0
     damage_flash = 0 
-    
-    # Başlangıç tetiğini döngünün içinde yöneteceğiz
     start_trigger = False 
+    touch_id = None
 
-    if IS_WEB:
-        pygame.display.flip()
-        await asyncio.sleep(0.1)
-    else:
+    if not IS_WEB:
         try:
             import pygame.scrap
             pygame.scrap.init()
-        except: pass
+        except Exception as e:
+            print(f"Clipboard init error: {e}")
 
     while running:
         raw_ms = clock.tick(60) 
@@ -408,42 +405,49 @@ async def main():
         
         events = pygame.event.get()
         keys = pygame.key.get_pressed()
-        joy_axis = get_joy_axis()
         
         # 1. OLAYLARI YAKALA
         for e in events:
             if e.type == pygame.QUIT: running = False; break
             
-            if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION]:
+            # Mobil Dokunmatik İşleme
+            if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP]:
                 is_mobile = True
-                # pygame-web'de e.x ve e.y 0 ile 1 arasındadır, W ve H ile çarpılmalıdır
                 fx, fy = e.x * W, e.y * H
+                
                 if e.type == pygame.FINGERDOWN:
-                    # MENÜ Butonu Kontrolü (Oyun içindeyken)
                     if state == "GAME" and BTN_ESC.collidepoint(fx, fy):
                         pygame.mixer.music.stop(); state = "MENU"
-                    
-                    # Joystick Başlatma
                     if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
                         is_touching = True
                         touch_id = e.finger_id
                 
-        if is_touching and e.finger_id == touch_id:
-            joy_pos[0], joy_pos[1] = fx, fy
-            # --- JSON GİRİŞ MODU ---
+                if e.type == pygame.FINGERMOTION and is_touching and e.finger_id == touch_id:
+                    joy_pos[0], joy_pos[1] = fx, fy
+                
+                if e.type == pygame.FINGERUP and e.finger_id == touch_id:
+                    is_touching = False
+                    joy_pos = list(JOY_CENTER)
+
+            # JSON Giriş Modu
             if input_active:
                 if e.type == pygame.KEYDOWN:
-                    # CTRL + V Kontrolü
-                    if e.key == pygame.K_v and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-                        if not IS_WEB: # Masaüstü için
+                    mods = pygame.key.get_mods()
+                    # CTRL + V (Windows/Linux) veya CMD + V (Mac)
+                    if e.key == pygame.K_v and (mods & pygame.KMOD_CTRL or mods & pygame.KMOD_META):
+                        if not IS_WEB:
                             try:
                                 import pygame.scrap
+                                # Kaynağı al ve metne çevir
                                 raw_data = pygame.scrap.get(pygame.SCRAP_TEXT)
-                                if raw_data: 
-                                    text = raw_data.decode('utf-8').replace('\x00', '')
-                                    input_text += text
-                            except: pass
-                    
+                                if raw_data:
+                                    # Byte verisini temizle ve metne ekle
+                                    paste_text = raw_data.decode('utf-8').replace('\x00', '')
+                                    input_text += paste_text
+                            except Exception as ex:
+                                print(f"Paste error: {ex}")
+                        continue # Yapıştırma işleminden sonra diğer tuş kontrollerini atla
+
                     elif e.key == pygame.K_RETURN:
                         input_active = False
                         try:
@@ -451,164 +455,117 @@ async def main():
                             custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
                             input_text = "JSON Loaded!"
                         except: 
-                            input_text = "Invalid JSON!"
-                            custom_route = None
+                            input_text = "Invalid JSON!"; custom_route = None
+                    
                     elif e.key == pygame.K_BACKSPACE: 
                         input_text = input_text[:-1]
-                    elif e.unicode and not (pygame.key.get_mods() & pygame.KMOD_CTRL):
+                    
+                    elif e.unicode and not (mods & pygame.KMOD_CTRL or mods & pygame.KMOD_META):
                         input_text += e.unicode
                 continue
 
-            # --- MENÜ TIKLAMALARI ---
+            # Menü Tıklamaları
             if state == "MENU":
                 if e.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
-                    if e.type == pygame.MOUSEBUTTONDOWN: pos = e.pos
-                    else: pos = (e.x * W, e.y * H)
-                    
+                    pos = e.pos if e.type == pygame.MOUSEBUTTONDOWN else (e.x * W, e.y * H)
                     if BTN_CUSTOM.collidepoint(pos):
                         if IS_WEB:
-                            try:
-                                # js modülünden gelen window.prompt kullanımı
-                                paste_data = window.prompt("Paste your JSON route here:")
-                                if paste_data:
-                                    input_text = str(paste_data)
-                                    data = json.loads(input_text)
-                                    custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
-                                    input_text = "JSON Loaded!"
-                            except Exception as e:
-                                input_text = "Invalid JSON!"
-                                print(f"JSON Error: {e}")
-                        else:
-                            input_active = True
-                            input_text = ""
-                    
-                    # Başlat Butonu
-                    elif BTN_START.collidepoint(pos): 
-                        start_trigger = True
-                    
-                    # Mod Butonları
+                            paste_data = window.prompt("Paste JSON:")
+                            if paste_data:
+                                try:
+                                    data = json.loads(str(paste_data))
+                                    custom_route = data["route"]; input_text = "JSON Loaded!"
+                                except: input_text = "Invalid!"
+                        else: input_active = True; input_text = ""
+                    elif BTN_START.collidepoint(pos): start_trigger = True
                     elif BTN_1HP.collidepoint(pos): is_1hp = not is_1hp
                     elif BTN_ZEN.collidepoint(pos): is_zen = not is_zen
                     elif BTN_FAST.collidepoint(pos): time_scale = 1.2 if time_scale != 1.2 else 1.0
                     elif BTN_SLOW.collidepoint(pos): time_scale = 0.75 if time_scale != 0.75 else 1.0
-                    
-                    # Şarkı Seçimi
                     for i in range(len(SONGS)):
                         if H/2 + (i * 50) - 25 < pos[1] < H/2 + (i * 50) + 25:
                             current_song_path = list(SONGS.keys())[i]
+                if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE: start_trigger = True
 
-                if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE:
-                    start_trigger = True
-
-            # --- OYUN İÇİ KONTROLLER ---
             elif state == "GAME":
                 if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
                     pygame.mixer.music.stop(); state = "MENU"
-        # 2. BAŞLATMA MANTIĞI (Tetiklendiyse çalışır)
+
+        # 2. BAŞLATMA
         if start_trigger:
             state = "GAME"
             objects = []
             route_index = 0
-            if custom_route:
-                route = custom_route
-                pygame.mixer.music.stop()
-                TOTAL_TIME = 600
+            # ... (Müzik yükleme kısmı kodunda olduğu gibi kalsın) ...
+            if custom_route: route = custom_route; pygame.mixer.music.stop(); TOTAL_TIME = 600
             else:
                 route = CACHED_DATA.get(current_song_path, [])
                 p = current_song_path
                 if time_scale > 1.0: p = SONGS[p].get("fast", p)
                 elif time_scale < 1.0: p = SONGS[p].get("slow", p)
-                pygame.mixer.music.load(p)
-                pygame.mixer.music.play(start=SKIP_TIME)
+                pygame.mixer.music.load(p); pygame.mixer.music.play(start=SKIP_TIME)
                 TOTAL_TIME = pygame.mixer.Sound(p).get_length()
 
-            spawn_times = []
-            current_sum = 0
+            spawn_times = [0]
+            curr = 0
             for d in route:
-                spawn_times.append(current_sum)
-                current_sum += d["duration"] / time_scale
+                curr += d["duration"] / time_scale
+                spawn_times.append(curr)
             
             music_time = SKIP_TIME
-            while route_index < len(spawn_times) and spawn_times[route_index] < SKIP_TIME:
-                route_index += 1
-            
-            shake_amount, damage_flash = 0, 0
+            while route_index < len(spawn_times) and spawn_times[route_index] < SKIP_TIME: route_index += 1
             hp = 1 if is_1hp else 10
             player.x, player.y = W//2, H//2
-            player.velx, player.vely = 0, 0
-            start_trigger = False # TETİĞİ SIFIRLA
-            continue # Oyuna hemen başla
+            start_trigger = False
+            continue
 
-        # 3. OYUN DÖNGÜSÜ
+        # 3. OYUN MANTIĞI
         if state == "GAME":
-            # Müzik/Süre senkronizasyonu
+            m_pos = pygame.mixer.music.get_pos()
             if not custom_route:
-                m_pos = pygame.mixer.music.get_pos()
                 if m_pos >= 0: music_time = (m_pos / 1000.0) + SKIP_TIME
-                else: music_time += dt
+                else: dt = 0 # Müzik gelene kadar lagı önlemek için dondur
             else:
                 music_time += dt
 
-            # Sarsıntı azaltma
-            if shake_amount > 0: shake_amount -= 40 * (raw_ms / 1000.0)
-
-            # Nesne oluşturma
             while route_index < len(route) and music_time >= spawn_times[route_index]:
                 d = route[route_index]
-                cur = d.get("type", "object")
-                if cur == "object":
+                if d.get("type") == "block":
+                    objects.append(Block(tuple(d["pos"]), tuple(d["size"]), tuple(d["color"]), spawn_times[route_index] + d["etime"], d["adisplay"]))
+                else:
                     objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], blast=d.get("blast"), effect=d.get("effect")))
-                elif cur == "block":
-                    objects.append(Block(tuple(d["pos"]), tuple(d["size"]), tuple(d["color"]), d["etime"], d["adisplay"]))
                 route_index += 1
 
+            joy_axis = get_joy_axis()
             player.move(dt, keys, joy_axis)
             
             for obj in objects[:]:
                 if isinstance(obj, Object):
                     obj.move(dt)
-                    if not is_zen and dmgcd <= 0 and obj.blast is None and player.rect.colliderect(obj.rect):
-                        hp -= 1
-                        dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
-                        hit_sound.play()
-                        obj.remove()
+                    if not is_zen and dmgcd <= 0 and player.rect.colliderect(obj.rect):
+                        hp -= 1; dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0; hit_sound.play()
+                        if obj.blast is None: obj.remove()
                 elif isinstance(obj, Block):
-                    obj.update(dt)
-                    if obj.end:
-                        if obj in objects: objects.remove(obj)
-                        continue
-                    if not is_zen and dmgcd <= 0 and obj.dmg and player.rect.colliderect(obj.rect):
-                        hp -= 1
-                        dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
-                        hit_sound.play()
+                    obj.update(music_time) # MÜZİK ZAMANINI GÖNDERİYORUZ
+                    if obj.end: objects.remove(obj)
+                    elif not is_zen and dmgcd <= 0 and obj.dmg and player.rect.colliderect(obj.rect):
+                        hp -= 1; dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0; hit_sound.play()
 
             if dmgcd > 0: dmgcd -= dt
             if damage_flash > 0: damage_flash -= dt * 2
-
+            if shake_amount > 0: shake_amount -= 40 * (raw_ms / 1000.0)
             draw(objects, player, hp, show_joystick, joy_pos, music_time, shake_amount, damage_flash)
 
             if hp <= 0:
-                pygame.mixer.music.stop()
-                draw_overlay("GAME OVER", "RESTARTING...", "#ff0000")
-                pygame.display.flip()
-                await asyncio.sleep(0.5) 
-                pygame.event.clear()
-                start_trigger = True # ÖLÜNCE OTOMATİK RESTART
-                continue
-
-            if music_time >= TOTAL_TIME - 0.5:
-                state = "WIN"
+                pygame.mixer.music.stop(); draw_overlay("GAME OVER", "RESTARTING...", "#ff0000")
+                pygame.display.flip(); await asyncio.sleep(0.5); start_trigger = True; continue
+            if music_time >= TOTAL_TIME - 0.5: state = "WIN"
 
         elif state == "MENU":
-            draw_menu()
-            pygame.display.flip()
-
+            draw_menu(); pygame.display.flip()
         elif state == "WIN":
-            draw_overlay("LEVEL CLEARED!", "Tap/Space for Menu", "#00ff00")
-            pygame.display.flip()
-            if any((e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE) or e.type == pygame.FINGERDOWN for e in events):
-                state = "MENU"
-
+            draw_overlay("LEVEL CLEARED!", "Space to Menu", "#00ff00"); pygame.display.flip()
+            if any(e.type == pygame.KEYDOWN or e.type == pygame.FINGERDOWN for e in events): state = "MENU"
         await asyncio.sleep(0)
     pygame.quit()
 asyncio.run(main())
