@@ -20,22 +20,23 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pygbag==0.8.4  # Daha stabil versiyon
+          python -m pip install pygbag==0.8.4 
 
       - name: Build and Organize
         run: |
           mkdir -p deploy
+          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ 2>/dev/null || true
+          
           for dir in */; do
             dirname=${dir%/}
             if [ -f "$dirname/main.py" ]; then
-              # --no_cache ve --template default ekleyerek temiz kurulum yapalım
-              python -m pygbag --build --template default "$dirname/"
+              # --no_cache ekleyerek temiz ve hızlı build alalım
+              python -m pygbag --build --no_cache "$dirname/"
               
               mkdir -p "deploy/$dirname"
-              if [ -d "$dirname/build/web" ]; then
-                cp -r "$dirname/build/web/"* "deploy/$dirname/"
-              fi
-              # Assetleri manuel çekiyoruz (Garanti yöntem)
+              cp -r "$dirname/build/web/"* "deploy/$dirname/"
+              
+              # Gerekli dosyaların üzerine yaz (Garanti)
               cp -r "$dirname/assets" "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.json "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.html "deploy/$dirname/" 2>/dev/null || true

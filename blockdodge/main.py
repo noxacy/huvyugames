@@ -174,11 +174,14 @@ class Object:
         self.surf.fill(self.color)
         self.effect  = effect
         self.turn = turn
+        self.drawimg = self.surf
         
     def move(self, dt):
         self.elapsed += dt
         t = min(self.elapsed / self.travel_time, 1)
         progression = 1 - (1 - t) ** 3 if self.easing == "ease-out" else t
+        if self.turn != 0 and progression != 0:
+            self.drawimg = pygame.transform.rotate(self.surf, progression*360/self.turn)
         self.pos[0] = self.start_pos[0] + (self.target[0] - self.start_pos[0]) * progression
         self.pos[1] = self.start_pos[1] + (self.target[1] - self.start_pos[1]) * progression
         self.rect.center = (self.pos[0], self.pos[1])
@@ -253,7 +256,7 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, shake=0, dam
     for obj in objects:
         sr = obj.rect.copy()
         sr.x += ox; sr.y += oy
-        pygame.draw.rect(screen, obj.color, sr)
+        pygame.draw.rect(screen, obj.color, obj.rect)
         if obj.blast: cached_draw(obj.blast, "#000000", sr.center, True)
     
     # Oyuncuyu çiz (Dmgcd varken yanıp söner)
@@ -285,9 +288,13 @@ async def main():
     player = Player(W//2, H//2, 25)
     shake_amount, route_index, music_time = 0, 0, 0
     damage_flash = 0 
-    if sys.platform != "emscripten":
-        pygame.display.flip()
-        await asyncio.sleep(0)
+    pg = pygame 
+    
+    # Web üzerinde odağı zorla ve siyah ekranı geç
+    if sys.platform == "emscripten":
+        pg.display.set_mode((1280, 720)) # Ekranı tekrar tanımla
+        pg.display.flip()
+        await asyncio.sleep(0.1)
         try:
             import pygame.scrap
             pygame.scrap.init()
@@ -402,7 +409,7 @@ async def main():
 
             while route_index < len(route) and music_time >= spawn_times[route_index]:
                 d = route[route_index]
-                objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], blast=d.get("blast")))
+                objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], blast=d.get("blast"), effect=d.get("effect"), turn=d.get("turn", 0)))
                 route_index += 1
 
             player.move(dt, keys, joy_axis)
