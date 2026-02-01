@@ -39,7 +39,7 @@ jobs:
             if [ -f "$dirname/main.py" ]; then
               echo "Building game in folder: $dirname"
               
-              python -m pygbag --build "$dirname/"
+              python -m pygbag --no_limit "$dirname/"
               
               mkdir -p "deploy/$dirname"
               cp -r "$dirname/build/web/"* "deploy/$dirname/"
