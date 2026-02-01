@@ -1,5 +1,6 @@
 import pygame, math, json, asyncio
 import os, sys
+# pygbag: async
 is_mobile = False # İlk dokunuşta True olacak
 # Yüksek skorları yükle
 high_scores = {}
@@ -159,7 +160,7 @@ class Player:
         self.rect.center = (self.x, self.y)
 
 class Object:
-    def __init__(self, pos, target, easing, col, size, travel_time, *, blast=None):
+    def __init__(self, pos, target, easing, col, size, travel_time, *, blast=None, effect=None, turn=0):
         self.pos = list(pos)
         self.target = target
         self.easing = easing
@@ -170,7 +171,11 @@ class Object:
         self.start_pos = list(pos)
         self.rect = pygame.Rect(0, 0, size, size)
         self.blast = blast
-
+        self.surf = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+        self.surf.fill(self.color)
+        self.effect  = effect
+        self.turn = turn
+        
     def move(self, dt):
         self.elapsed += dt
         t = min(self.elapsed / self.travel_time, 1)

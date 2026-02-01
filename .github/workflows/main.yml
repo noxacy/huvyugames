@@ -25,6 +25,7 @@ jobs:
       - name: Build and Organize All Games
         run: |
           mkdir -p deploy
+          # Ana sayfaları kopyala
           cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ 2>/dev/null || true
           
           for dir in */; do
@@ -32,19 +33,22 @@ jobs:
             if [ "$dirname" == "deploy" ] || [ "$dirname" == ".github" ]; then continue; fi
 
             if [ -f "$dirname/main.py" ]; then
-              echo "Building game: $dirname"
-              # pygbag build komutu
+              echo "Building: $dirname"
               python -m pygbag --build "$dirname/"
               
+              # Klasörü oluştur
               mkdir -p "deploy/$dirname"
-              # Build klasöründeki her şeyi kopyala
-              cp -r "$dirname/build/web/"* "deploy/$dirname/"
               
-              # EKSTRA: Ana klasördeki assets ve json'ları manuel kopyalayarak riski sıfırla
-              if [ -d "$dirname/assets" ]; then
-                cp -r "$dirname/assets" "deploy/$dirname/"
+              # 1. pygbag'in ürettiği web dosyalarını kopyala
+              if [ -d "$dirname/build/web" ]; then
+                cp -r "$dirname/build/web/"* "deploy/$dirname/"
               fi
+
+              # 2. ÖNEMLİ: Senin özel dosyalarını (play.html, assets, json) build klasörünün üzerine yaz
+              cp -r "$dirname/assets" "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.json "deploy/$dirname/" 2>/dev/null || true
+              cp "$dirname"/*.html "deploy/$dirname/" 2>/dev/null || true # blockdodge_play.html burada kurtarılıyor
+              cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
             fi
           done
 
