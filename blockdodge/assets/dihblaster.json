@@ -5,6 +5,7 @@
             "time": 1,
             "blast": 8,
             "size": 33,
+            "turn": 45,
             "target": [640, 200],
             "easing": "ease-out",
             "color": "#ff0000",
