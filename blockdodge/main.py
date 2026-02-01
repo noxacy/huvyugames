@@ -218,33 +218,37 @@ class Player:
         self.rect.center = (self.x, self.y)
 
 class Object:
-    def __init__(self, pos, target, easing, col, size, travel_time, *, blast=None, effect=None):
+    def __init__(self, pos, target, easing, col, size, travel_time, spawn_time, *, blast=None, effect=None):
         self.pos = list(pos)
         self.target = target
         self.easing = easing
         self.color = col
         self.size = size
         self.travel_time = max(travel_time, 0.01)
-        self.elapsed = 0
+        self.spawn_time = spawn_time # Merminin doğduğu müzik saniyesi
         self.start_pos = list(pos)
         self.rect = pygame.Rect(0, 0, size, size)
         self.blast = blast
-        self.effect  = effect
+        self.effect = effect
         self.mainc = col
         
-    def move(self, dt):
-        self.elapsed += dt
-        t = min(self.elapsed / self.travel_time, 1)
+    def move(self, current_music_time):
+        # Merminin ne kadar süredir hayatta olduğunu müzik zamanına göre hesapla
+        elapsed = current_music_time - self.spawn_time
+        t = min(elapsed / self.travel_time, 1)
+        
+        # Eğer henüz doğma zamanı gelmediyse (negatifse) hareket etme
+        if t < 0: return 
+
         progression = 1 - (1 - t) ** 3 if self.easing == "ease-out" else t
-        if progression >= 0.9:
-            if self.effect is not None:
-                if self.color != self.effect:
-                    self.color = self.effect
-                else:
-                    self.color = self.mainc
+        
+        if progression >= 0.9 and self.effect is not None:
+            self.color = self.effect if self.color != self.effect else self.mainc
+
         self.pos[0] = self.start_pos[0] + (self.target[0] - self.start_pos[0]) * progression
         self.pos[1] = self.start_pos[1] + (self.target[1] - self.start_pos[1]) * progression
         self.rect.center = (self.pos[0], self.pos[1])
+        
         if t >= 1: self.remove()
 
     def remove(self):
@@ -254,7 +258,8 @@ class Object:
                 dir = math.radians(360/self.blast*n)
                 tx = self.pos[0] + math.cos(dir) * 500
                 ty = self.pos[1] + math.sin(dir) * 500
-                objects.append(Object(self.pos, (tx, ty), "ease-out", self.color, 10, 1.0))
+                # Patlamadan çıkan küçük parçaların doğuş zamanı tam şu anki müzik zamanıdır
+                objects.append(Object(self.pos, (tx, ty), "ease-out", self.color, 10, 1.0, self.spawn_time + self.travel_time))
         if self in objects: objects.remove(self)
 
 class Block:
@@ -530,10 +535,12 @@ async def main():
 
             while route_index < len(route) and music_time >= spawn_times[route_index]:
                 d = route[route_index]
+                st = spawn_times[route_index] # Tam doğuş anı
                 if d.get("type") == "block":
-                    objects.append(Block(tuple(d["pos"]), tuple(d["size"]), tuple(d["color"]), spawn_times[route_index] + d["etime"], d["adisplay"]))
+                    objects.append(Block(tuple(d["pos"]), tuple(d["size"]), tuple(d["color"]), st + d["etime"], d["adisplay"]))
                 else:
-                    objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], blast=d.get("blast"), effect=d.get("effect")))
+                    # Yeni parametre: st (spawn_time)
+                    objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], st, blast=d.get("blast"), effect=d.get("effect")))
                 route_index += 1
 
             joy_axis = get_joy_axis()
@@ -541,10 +548,10 @@ async def main():
             
             for obj in objects[:]:
                 if isinstance(obj, Object):
-                    obj.move(dt)
+                    # ARTIK dt DEĞİL music_time GÖNDERİYORUZ
+                    obj.move(music_time) 
                     if not is_zen and dmgcd <= 0 and player.rect.colliderect(obj.rect):
                         hp -= 1; dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0; hit_sound.play()
-                        if obj.blast is None: obj.remove()
                 elif isinstance(obj, Block):
                     obj.update(music_time) # MÜZİK ZAMANINI GÖNDERİYORUZ
                     if obj.end: objects.remove(obj)
