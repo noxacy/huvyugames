@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Playing Tower Defense | Huvyu Games</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3553688527206955" crossorigin="anonymous"></script>
+    
+    <style>
+        /* Ana Tema Ayarları */
+        body { background-color: #0b0c10; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Nav Bar - Akif Clicker Stili */
+        .nav-bar { width: 100%; background: #1b1c22; padding: 15px 40px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d67813; }
+        .nav-bar a { color: #d67813; text-decoration: none; font-weight: bold; transition: 0.3s; }
+        .nav-bar a:hover { color: #ff9d00; text-shadow: 0 0 10px #d67813; }
+        
+        /* Fullscreen Butonu - Modern Efekt */
+        .fullscreen-btn { background: #d67813; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .fullscreen-btn:hover { background: #ff9d00; transform: scale(1.05); box-shadow: 0 0 15px rgba(214, 120, 19, 0.4); }
+        
+        /* Layout */
+        .container { display: grid; grid-template-columns: 1fr 900px 320px; gap: 30px; padding: 30px; max-width: 1600px; }
+        
+        /* Oyun Çerçevesi - Parlama Efekti */
+        .game-wrapper { grid-column: 2; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 0 40px rgba(214, 120, 19, 0.15); position: relative; aspect-ratio: 16 / 9; width: 100%; border: 1px solid #333; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+        
+        /* Yazı Alanları */
+        .game-info { grid-column: 2; padding: 20px 0; line-height: 1.6; }
+        h2 { color: #d67813; font-size: 2.2rem; margin-bottom: 10px; }
+        h3 { color: #ff9d00; margin-top: 25px; border-bottom: 1px solid #333; display: inline-block; padding-bottom: 5px; }
+        strong { color: #d67813; }
+        ul li { margin-bottom: 12px; }
+
+        /* Vurgu Kutusu (Akif Clicker'daki stil) */
+        .highlight-box { background: rgba(214, 120, 19, 0.1); border-left: 4px solid #d67813; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+
+        /* Sidebar */
+        .sidebar { grid-column: 3; display: flex; flex-direction: column; gap: 20px; }
+        .ad-space { background: #1b1c22; min-height: 300px; border-radius: 8px; border: 1px dashed #444; display: flex; align-items: center; justify-content: center; color: #666; }
+        
+        /* Yan Oyunlar Kartları */
+        .other-games-mini { background: #1b1c22; padding: 20px; border-radius: 10px; border: 1px solid #333; }
+        .mini-card { display: flex; gap: 15px; margin-bottom: 15px; text-decoration: none; color: white; transition: 0.2s; align-items: center; }
+        .mini-card:hover { transform: translateX(5px); }
+        .mini-thumb { width: 60px; height: 60px; background: linear-gradient(45deg, #1b1c22, #d67813); border-radius: 8px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-bar">
+        <a href="../index.html">← BACK TO ARCADE</a>
+        <div style="font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;">TOWER DEFENSE <span style="color:#d67813">v1.1</span></div>
+        <button class="fullscreen-btn" onclick="openFullscreen();">GO FULLSCREEN</button>
+    </div>
+
+    <div class="container">
+        <div class="game-wrapper" id="gameArea">
+            <iframe id="gameIframe" src="index.html"></iframe>
+        </div>
+
+        <div class="game-info">
+            <h2>Tower Defense: Tactical Survival</h2>
+            <p>Welcome to the ultimate challenge in strategic defense. In <strong>Tower Defense: Tactical Survival</strong>, you are the last line of defense against an ever-evolving army of invaders. This project, built by <strong>Noxacy & Huzeyfe</strong>, combines classic arcade mechanics with modern performance optimization.</p>
+
+            <div class="highlight-box">
+                <strong>Commander's Note:</strong> Efficiency is key. A single Tier-3 tower is often worth more than an entire field of Tier-1 scouts.
+            </div>
+
+            <h3>Ultimate Strategy & Gameplay Guide</h3>
+            <p>Success in this game requires more than just placing towers; it requires a deep understanding of <strong>resource management</strong> and <strong>bottleneck tactics</strong>.</p>
+            
+            <ul>
+                <li><strong>Path Optimization:</strong> Always look for "U-turns" in the enemy path. Placing a tower at the center of a curve allows it to hit enemies for the longest possible duration.</li>
+                <li><strong>Economic Balance:</strong> High-level towers pierce armor and have significantly higher fire rates. Don't over-extend; focus on key upgrade milestones.</li>
+                <li><strong>Target Prioritization:</strong> Fast scouts can slip past heavy cannons. Ensure your tower distribution covers both high-speed and high-health threats.</li>
+            </ul>
+
+            <h3>Changelog</h3>
+            <p>Update V1.1</strong>.</p>
+            
+            <ul>
+                <li><strong>New Towers:</strong> Bomber, Flamethrower, Orchard, Turret, Tesla, Minigunner, Sentry.</li>
+                <li><strong>New Enemies:</strong> Phalanx, Ghost, Overlord, Hyper Swift, Doomsday, The singularity.</li>
+                <li><strong>Waves 30-50.</li>
+            </ul>
+
+            <h3>The Technology Behind the Game</h3>
+            <p>Our game is built using <strong>Python and Pygame</strong>, then compiled into <strong>WebAssembly (WASM)</strong> via the Pygbag compiler. This allows for near-native performance directly in your browser with smooth frame rates and responsive controls.</p>
+
+            <p><em>Master the grid, upgrade your arsenal, and see how many waves you can survive in this Noxacy & Huzeyfe original!</em></p>
+        </div>
+
+        <div class="sidebar">
+            <div class="ad-space">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-3553688527206955"
+                     data-ad-slot="YOUR_AD_SLOT"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                <span>Advertisement Area</span>
+            </div>
+            
+            <div class="other-games-mini">
+                <h4>More from Huvyu Game</h4>
+                <a href="../aclicker/aclicker_play.html" class="mini-card">
+                    <div class="mini-thumb"></div>
+                    <div><strong>Akif Clicker</strong><br><span style="color:#777; font-size:0.8rem">Incremental</span></div>
+                </a>
+                <a href="../blockdodge/blockdodge_play.html" class="mini-card">
+                    <div class="mini-thumb"></div>
+                    <div><strong>Blockdodge</strong><br><span style="color:#777; font-size:0.8rem">Action</span></div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var elem = document.getElementById("gameArea");
+    async function openFullscreen() {
+        try {
+            if (elem.requestFullscreen) { await elem.requestFullscreen(); }
+            else if (elem.webkitRequestFullscreen) { await elem.webkitRequestFullscreen(); }
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('landscape').catch(e => console.log(e));
+            }
+        } catch (err) { console.error(err); }
+    }
+    </script>
+</body>
+</html>
