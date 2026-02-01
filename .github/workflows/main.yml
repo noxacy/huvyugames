@@ -16,28 +16,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.12' # 3.11 yerine 3.12 yapalım
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pygbag==0.8.4 
+          python -m pip install pygbag==0.9.1 # Tekrar 0.9.1'e çıkalım ama build komutunu değiştirelim
 
       - name: Build and Organize
         run: |
           mkdir -p deploy
-          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ 2>/dev/null || true
-          
           for dir in */; do
             dirname=${dir%/}
             if [ -f "$dirname/main.py" ]; then
-              echo "Building: $dirname"
-              python -m pygbag --build "$dirname/"
+              # --no_cache yerine --clean kullanarak CDN sorunlarını aşalım
+              python -m pygbag --build --clean "$dirname/"
               
               mkdir -p "deploy/$dirname"
-              # Sadece pygbag'in ürettiği klasörü kopyala, manuel müdahale etme
               cp -r "$dirname/build/web/"* "deploy/$dirname/"
-              
-              # Sadece senin özel HTML dosyanı dışarıdan ekle
               cp "$dirname/blockdodge_play.html" "deploy/$dirname/" 2>/dev/null || true
             fi
           done
