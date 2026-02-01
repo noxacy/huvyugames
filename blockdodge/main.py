@@ -1,4 +1,28 @@
 import pygame, math, json, asyncio, sys, os
+
+# Web ortamı kontrolü
+IS_WEB = sys.platform == "emscripten"
+
+if IS_WEB:
+    import platform
+    # Pygame-web'de browser yerine genelde js kullanılır
+    try:
+        from js import window, prompt
+    except ImportError:
+        # Bazı sürümlerde js doğrudan window olarak gelir
+        import js as window
+
+# Mobil kontrolü (Çökmeyi önlemek için güvenli yöntem)
+is_mobile = False
+if IS_WEB:
+    try:
+        # userAgentData yerine userAgent kullanmak daha güvenlidir
+        from js import window
+        user_agent = window.navigator.userAgent
+        if any(x in user_agent for x in ["Mobile", "Android", "iPhone", "iPad"]):
+            is_mobile = True
+    except:
+        pass
 # Yüksek skorları yükle
 high_scores = {}
 if os.path.exists("scores.json"):
@@ -9,9 +33,6 @@ shake_amount = 0
 # Mobil Buton Bölgeleri
 pygame.init()
 pygame.mixer.init()
-IS_WEB = sys.platform == "emscripten"
-if IS_WEB:
-    from browser import window
 W, H = 1280, 720
 screen = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
