@@ -964,7 +964,7 @@
         {
             "pos": [640, 360],
             "time": 0.7,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [150, 150],
             "easing": "ease-out",
@@ -975,7 +975,7 @@
         {
             "pos": [640, 360],
             "time": 0.5,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [476, 150],
             "easing": "ease-out",
@@ -986,7 +986,7 @@
         {
             "pos": [640, 360],
             "time": 0.3,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [802, 150],
             "easing": "ease-out",
@@ -997,7 +997,7 @@
         {
             "pos": [640, 360],
             "time": 0.1,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [1130, 150],
             "easing": "ease-out",
@@ -1008,7 +1008,7 @@
         {
             "pos": [640, 360],
             "time": 0.7,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [150, 540],
             "easing": "ease-out",
@@ -1019,7 +1019,7 @@
         {
             "pos": [640, 360],
             "time": 0.5,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [476, 540],
             "easing": "ease-out",
@@ -1030,7 +1030,7 @@
         {
             "pos": [640, 360],
             "time": 0.3,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [802, 540],
             "easing": "ease-out",
@@ -1041,7 +1041,7 @@
         {
             "pos": [640, 360],
             "time": 0.1,
-            "blast": 24,
+            "blast": 12,
             "size": 33,
             "target": [1130, 540],
             "easing": "ease-out",
