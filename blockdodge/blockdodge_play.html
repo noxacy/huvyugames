@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Playing Blockdodge | Huvyu Games</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3553688527206955" crossorigin="anonymous"></script>
+    
+    <style>
+        body { background-color: #0b0c10; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .nav-bar { width: 100%; background: #1b1c22; padding: 15px 40px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff0000; }
+        .nav-bar a { color: #ff0000; text-decoration: none; font-weight: bold; transition: 0.3s; }
+        .nav-bar a:hover { color: #ff5858; text-shadow: 0 0 10px #ff0000; }
+        .fullscreen-btn { background: #ff0000; color: #000; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .fullscreen-btn:hover { background: #ff2020; transform: scale(1.05); }
+        
+        .container { display: grid; grid-template-columns: 1fr 900px 320px; gap: 30px; padding: 30px; max-width: 1600px; }
+        
+        .game-wrapper { grid-column: 2; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 0 40px rgba(255, 0, 0, 0.15); position: relative; aspect-ratio: 16 / 9; width: 100%; border: 1px solid #333; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+        
+        .game-info { grid-column: 2; padding: 20px 0; line-height: 1.6; }
+        h2 { color: #ff0000; font-size: 2.2rem; margin-bottom: 10px; }
+        h3 { color: #ff2424; margin-top: 25px; }
+        strong { color: #ff0000; }
+        ul li { margin-bottom: 12px; }
+
+        .sidebar { grid-column: 3; display: flex; flex-direction: column; gap: 20px; }
+        .ad-space { background: #1b1c22; min-height: 300px; border-radius: 8px; border: 1px dashed #444; display: flex; align-items: center; justify-content: center; color: #666; }
+        
+        .other-games-mini { background: #1b1c22; padding: 20px; border-radius: 10px; border: 1px solid #333; }
+        .mini-card { display: flex; gap: 15px; margin-bottom: 15px; text-decoration: none; color: white; transition: 0.2s; align-items: center; }
+        .mini-card:hover { transform: translateX(5px); }
+        .mini-thumb { width: 60px; height: 60px; background: linear-gradient(45deg, #1b1c22, #ff0000); border-radius: 8px; flex-shrink: 0; }
+        
+        .highlight-box { background: rgba(255, 0, 0, 0.1); border-left: 4px solid #ff0000; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-bar">
+        <a href="../index.html">← RETURN TO HOME</a>
+        <div style="font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;">BLOCKDODGE <span style="color:#ff0000">V1.0</span></div>
+        <button class="fullscreen-btn" onclick="openFullscreen();">LAUNCH FULLSCREEN</button>
+    </div>
+
+    <div class="container">
+        <div class="game-wrapper" id="gameArea">
+            <iframe id="gameIframe" src="index.html" scrolling="no"></iframe>
+        </div>
+
+        <div class="game-info">
+            <h2>Blockdodge: Rhythm & Reflex</h2>
+            <p>Sync your pulse with the beat in the ultimate test of survival. In <strong>Blockdodge</strong>, you control a lone entity in a world of aggressive geometry. Developed by <strong>Noxacy & Huzeyfe</strong>, this game challenges you to navigate through chaotic bullet-hell patterns that move in perfect harmony with the soundtrack.</p>
+
+            <div class="highlight-box">
+                <strong>Pro Tip:</strong> Don't just watch the shapes; feel the rhythm. The most complex "Block Storms" are designed to follow the musical BPM. Mastering the track is the key to mastering the stage.
+            </div>
+
+            <h3>Rhythm Mastery Guide</h3>
+            <p>Surviving the geometric onslaught requires more than just fast hands; you need a strategic ear:</p>
+            
+            <ul>
+                <li><strong>The Beat-Drop Dash:</strong> Patterns often intensify during the chorus. Save your focus for these high-energy segments where the squares move faster and in tighter formations.</li>
+                <li><strong>Edge Control:</strong> While the center gives you the most movement options, the edges can be used to bait projectiles. Just be careful not to get cornered during a 360-degree sweep.</li>
+                <li><strong>Music:</strong> This game uses a special remix of "Sonic Blaster - F-777" that was made by Noxacy.</li>
+            </ul>
+            <h3>Custom Levels</h3>
+            <p>This is our first game to include a custom level system! Click <a href="blockdodge_custom_level_guide.html" style="color:#ff5858;">here</a> to view the guide.</p>
+
+            <h3>Engine & Performance</h3>
+            <p>Built with a high-precision <strong>Python/Pygame</strong> framework and exported via <strong>WebAssembly</strong>, Blockdodge ensures sub-millisecond input response, critical for high-tier rhythm gameplay.</p>
+
+            <p><em>Listen closely, move swiftly, and survive the geometric chaos!</em></p>
+        </div>
+
+        <div class="sidebar">
+            <div class="ad-space">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-3553688527206955"
+                     data-ad-slot="YOUR_AD_SLOT"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                <span>Advertisement</span>
+            </div>
+            
+            <div class="other-games-mini">
+                <h4>More from Huvyu Games</h4>
+                <a href="../aclicker/aclicker_play.html" class="mini-card">
+                    <div class="mini-thumb"></div>
+                    <div><strong>Akif Clicker</strong><br><span style="color:#777; font-size:0.8rem">Idle Economy</span></div>
+                </a>
+                <a href="../td/td_play.html" class="mini-card">
+                    <div class="mini-thumb"></div>
+                    <div><strong>Tower Defense</strong><br><span style="color:#777; font-size:0.8rem">Tactical Strategy</span></div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var elem = document.getElementById("gameArea");
+    async function openFullscreen() {
+        try {
+            if (elem.requestFullscreen) { 
+                await elem.requestFullscreen(); 
+            } else if (elem.webkitRequestFullscreen) { 
+                await elem.webkitRequestFullscreen(); 
+            } else if (elem.msRequestFullscreen) {
+                await elem.msRequestFullscreen();
+            }
+            
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('landscape').catch(e => console.log("Orientation lock not supported"));
+            }
+        } catch (err) {
+            console.error("Error attempting to enable full-screen mode:", err);
+        }
+    }
+    </script>
+</body>
+</html>
