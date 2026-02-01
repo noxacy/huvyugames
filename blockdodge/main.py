@@ -551,12 +551,12 @@ async def main():
                     # ARTIK dt DEĞİL music_time GÖNDERİYORUZ
                     obj.move(music_time) 
                     if not is_zen and dmgcd <= 0 and player.rect.colliderect(obj.rect):
-                        hp -= 1; dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0; hit_sound.play()
+                        hp -= 1; dmgcd, shake_amount, damage_flash = 2, 15, 1.0; hit_sound.play()
                 elif isinstance(obj, Block):
                     obj.update(music_time) # MÜZİK ZAMANINI GÖNDERİYORUZ
                     if obj.end: objects.remove(obj)
                     elif not is_zen and dmgcd <= 0 and obj.dmg and player.rect.colliderect(obj.rect):
-                        hp -= 1; dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0; hit_sound.play()
+                        hp -= 1; dmgcd, shake_amount, damage_flash = 2, 15, 1.0; hit_sound.play()
 
             if dmgcd > 0: dmgcd -= dt
             if damage_flash > 0: damage_flash -= dt * 2
