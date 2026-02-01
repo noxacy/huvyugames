@@ -452,24 +452,20 @@ async def main():
                     if e.type == pygame.MOUSEBUTTONDOWN: pos = e.pos
                     else: pos = (e.x * W, e.y * H)
                     
-                    # JSON Butonuna Tıklama (ÖNCELİKLİ)
-                    # JSON Butonuna Tıklama
                     if BTN_CUSTOM.collidepoint(pos):
                         if IS_WEB:
-                            # Tarayıcı penceresini aç ve kullanıcıdan yapıştırmasını iste
                             try:
-                                from browser import window
-                                paste_data = window.prompt("Paste your JSON route here (Ctrl+V):")
+                                # js modülünden gelen window.prompt kullanımı
+                                paste_data = window.prompt("Paste your JSON route here:")
                                 if paste_data:
-                                    input_text = paste_data
-                                    # Hemen yüklemeyi dene
+                                    input_text = str(paste_data)
                                     data = json.loads(input_text)
                                     custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
                                     input_text = "JSON Loaded!"
-                            except: 
+                            except Exception as e:
                                 input_text = "Invalid JSON!"
+                                print(f"JSON Error: {e}")
                         else:
-                            # Masaüstünde sadece yazma modunu aç
                             input_active = True
                             input_text = ""
                     
