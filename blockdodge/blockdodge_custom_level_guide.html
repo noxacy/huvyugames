@@ -57,13 +57,22 @@
         {
             "pos": [x, y],       // Start position
             "time": x,           // Explosion time
-            "effect": "#ffffff"  // Block flash effect color
+            "effect": "#ffffff"  // Block flash effect color (0 if no effect)
             "blast": x,          // Number of pieces
             "size": x,           // Block size
             "target": [x, y],    // Destination
             "easing": "ease-out",// Keep "ease-out"
             "color": "#ffffff",  // Color hex
-            "duration": x        // Wait time for next block
+            "duration": x        // Wait time for next object
+        },
+        {
+            "type": "block",     // For blocks
+            "pos": [x, y],       // Start position (top-left)
+            "etime": x,          // The total time
+            "adisplay": x,       // Time for it to activate
+            "color": [x, y, z],  // Color RGB
+            "size": [x, y],      // Size (+X = Right, +Y = Down)
+            "duration": x        // Wait time for next object
         }
     ]
 }
