@@ -26,7 +26,7 @@ if IS_WEB:
 high_scores = {}
 if os.path.exists("scores.json"):
     with open("scores.json", "r") as f: high_scores = json.load(f)
-SKIP_TIME = 35
+SKIP_TIME = 0
 shake_amount = 0
 
 # Mobil Buton Bölgeleri
