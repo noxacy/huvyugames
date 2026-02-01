@@ -1,9 +1,10 @@
 import pygame, math, json, asyncio, sys, os
-is_mobile = False # İlk dokunuşta True olacak
 # Yüksek skorları yükle
 high_scores = {}
 if os.path.exists("scores.json"):
     with open("scores.json", "r") as f: high_scores = json.load(f)
+SKIP_TIME = 0
+shake_amount = 0
 
 # Mobil Buton Bölgeleri
 pygame.init()
@@ -73,11 +74,26 @@ touch_id = None
 BTN_START = pygame.Rect(W/2 - 100, H - 150, 200, 60)
 BTN_ESC = pygame.Rect(W - 120, 20, 100, 50) # Oyun içi ESC butonu
 
+is_mobile = False
+if IS_WEB:
+    # Web'de dokunmatik bir cihaz olup olmadığını kontrol et
+    try:
+        import browser
+        if "Mobile" in browser.window.navigator.userAgent:
+            is_mobile = True
+    except: pass
+
 # Verileri önbelleğe al (Lagı önlemek için)
 
 SONGS = {
+    "assets/slash_inferno.ogg": {
+        "name": "Slash Inferno - Noxacy Remix (EASY)",
+        "data": "assets/slash_inferno.json",
+        "slow": "assets/slash_inferno_slow.ogg", # Yavaşlatılmış versiyon
+        "fast": "assets/slash_inferno_fast.ogg"  # Hızlandırılmış versiyon
+    },
     "assets/dihblaster.ogg": {
-        "name": "Sonic Blaster",
+        "name": "Sonic Blaster - Noxacy Remix (HARD)",
         "data": "assets/dihblaster.json",
         "slow": "assets/dihblaster_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/dihblaster_fast.ogg"  # Hızlandırılmış versiyon
@@ -86,12 +102,15 @@ SONGS = {
 current_song_path = list(SONGS.keys())[0]
 state = "MENU"
 
+# Tüm şarkı verilerini oyun açılırken bir kez yükle
 CACHED_DATA = {}
-try:
-    with open(SONGS[current_song_path]["data"], "r") as f:
-        CACHED_DATA[current_song_path] = json.load(f)["route"]
-except:
-    CACHED_DATA[current_song_path] = []
+for path, info in SONGS.items():
+    try:
+        with open(info["data"], "r") as f:
+            CACHED_DATA[path] = json.load(f)["route"]
+    except Exception as e:
+        print(f"Yükleme hatası ({info['name']}): {e}")
+        CACHED_DATA[path] = []
 
 def draw_overlay(title, subtitle, color="#ffffff"):
     # Arka planı hafif karart
@@ -137,6 +156,12 @@ def draw_menu():
         msg = "Custom JSON Loaded!"
     else:
         msg = "Click & CTRL+V to Paste JSON"
+
+    # Start Butonu Çizimi
+    pygame.draw.rect(screen, "#00ff00", BTN_START, 0, border_radius=10)
+    cached_draw("START", "#000000", BTN_START.center, True)
+    
+    # Mobildeysek ESC/Menü butonu da menüde yardımcı olabilir (İsteğe bağlı)
         
     cached_draw(display_txt if input_active else msg, "#00ff00" if input_active else "#ffffff", BTN_CUSTOM.center, True)
 
@@ -171,7 +196,7 @@ class Player:
         self.rect.center = (self.x, self.y)
 
 class Object:
-    def __init__(self, pos, target, easing, col, size, travel_time, *, blast=None, effect=None, turn=0):
+    def __init__(self, pos, target, easing, col, size, travel_time, *, blast=None, effect=None):
         self.pos = list(pos)
         self.target = target
         self.easing = easing
@@ -182,18 +207,19 @@ class Object:
         self.start_pos = list(pos)
         self.rect = pygame.Rect(0, 0, size, size)
         self.blast = blast
-        self.surf = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha() # convert_alpha ekle
-        self.surf.fill(self.color)
         self.effect  = effect
-        self.turn = turn
-        self.drawimg = self.surf
+        self.mainc = col
         
     def move(self, dt):
         self.elapsed += dt
         t = min(self.elapsed / self.travel_time, 1)
         progression = 1 - (1 - t) ** 3 if self.easing == "ease-out" else t
-        if self.turn != 0 and progression != 0:
-            self.drawimg = pygame.transform.rotate(self.surf, progression*360/self.turn)
+        if progression >= 0.9:
+            if self.effect is not None:
+                if self.color != self.effect:
+                    self.color = self.effect
+                else:
+                    self.color = self.mainc
         self.pos[0] = self.start_pos[0] + (self.target[0] - self.start_pos[0]) * progression
         self.pos[1] = self.start_pos[1] + (self.target[1] - self.start_pos[1]) * progression
         self.rect.center = (self.pos[0], self.pos[1])
@@ -209,30 +235,57 @@ class Object:
                 objects.append(Object(self.pos, (tx, ty), "ease-out", self.color, 10, 1.0))
         if self in objects: objects.remove(self)
 
-def handle_events():
-    global running, pressed_keys, is_touching, joy_pos, show_joystick, touch_id
-    pressed_keys = pygame.key.get_pressed()
-    for e in pygame.event.get():
-        if e.type == pygame.QUIT:
-            running = False
-        if e.type == pygame.FINGERDOWN:
-            fx, fy = e.x * W, e.y * H
-            if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 2:
-                is_touching = True; show_joystick = True; touch_id = e.finger_id
-        if e.type == pygame.FINGERUP:
-            if e.finger_id == touch_id:
-                is_touching = False; joy_pos = list(JOY_CENTER); touch_id = None
+class Block:
+    def __init__(self, center: tuple, size: tuple, color: tuple, etime: float | int, adisplay: float | int):
+        self.x = center[0]
+        self.y = center[1]
+        self.sizex = size[0]
+        self.sizey = size[1]
+        self.rect = pygame.Rect(0, 0, size[0], size[1])
+        self.rect.center = (self.x, self.y)
+        self.color = color
+        self.maincolor = color
+        self.etime = etime
+        self.dmg = False
+        self.starttime = etime
+        self.adisplay = adisplay
+        self.a = 0.5
+        self.set_col()
+        self.end = False
+
+    def set_col(self):
+        r, g, b = self.maincolor
+        r = int(r * (1 - self.a))
+        g = int(g * (1 - self.a))
+        b = int(b * (1 - self.a))
+        self.color = (r, g, b)
+    
+    def draw(self):
+        pygame.draw.rect(screen, self.color, self.rect)
+
+    def update(self, dt): # dt parametresini ekledik
+        global shake_amount
+        self.etime -= dt
+        if self.etime <= 0:
+            self.end = True
+        if self.starttime - self.etime >= self.adisplay:
+            if not self.dmg: # Sadece patladığı an sarsıntı yap
+                self.dmg = True
+                self.a = 0
+                self.set_col()
+                shake_amount = 5
 
 def get_joy_axis():
-    if not is_touching or touch_id is None: return [0, 0]
+    if not is_touching: return [0, 0]
+    dx = joy_pos[0] - JOY_CENTER[0]
+    dy = joy_pos[1] - JOY_CENTER[1]
+    return [dx/JOY_RADIUS, dy/JOY_RADIUS]
     try:
         finger = pygame._sdl2.touch.get_finger(pygame._sdl2.touch.get_device(0), touch_id)
         if not finger: return [0, 0]
         fx, fy = finger['x'] * W, finger['y'] * H
-        dx, dy = fx - JOY_CENTER[0], fy - JOY_CENTER[1]
         dist = math.hypot(dx, dy)
         if dist > JOY_RADIUS: dx, dy = dx/dist * JOY_RADIUS, dy/dist * JOY_RADIUS
-        global joy_pos
         joy_pos = [JOY_CENTER[0] + dx, JOY_CENTER[1] + dy]
         return [dx/JOY_RADIUS, dy/JOY_RADIUS]
     except: return [0,0]
@@ -266,10 +319,24 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, shake=0, dam
     pygame.draw.rect(screen, (255, 255, 255), (ox, oy, bar_width, 8))
 
     for obj in objects:
-        sr = obj.rect.copy()
-        sr.x += ox; sr.y += oy
-        screen.blit(obj.drawimg, obj.rect)
-        if obj.blast: cached_draw(obj.blast, "#000000", sr.center, True)
+        if isinstance(obj, Block):
+            obj.draw()
+
+    for obj in objects:
+        if isinstance(obj, Object):
+            sr = obj.rect.copy()
+            sr.x += ox; sr.y += oy
+            pygame.draw.rect(screen, obj.color, obj.rect)
+            if obj.blast: cached_draw(obj.blast, "#000000", sr.center, True)
+    
+    if is_mobile:
+        pygame.draw.rect(screen, (100, 100, 100), BTN_ESC, 0, border_radius=5)
+        cached_draw("MENU", "#ffffff", BTN_ESC.center, True)
+
+    # Joystick Çizimi
+    if is_mobile: # show_joystick yerine is_mobile kullanmak daha garantidir
+        pygame.draw.circle(screen, (255, 255, 255), JOY_CENTER, JOY_RADIUS, 2)
+        pygame.draw.circle(screen, (150, 150, 150), joy_pos, JOY_STICK_RADIUS)
     
     # Oyuncuyu çiz (Dmgcd varken yanıp söner)
     if dmgcd <= 0 or int(pygame.time.get_ticks() / 50) % 2 == 0:
@@ -293,13 +360,14 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, shake=0, dam
         pygame.draw.circle(screen, (40, 40, 40), JOY_CENTER, JOY_RADIUS, 2)
         pygame.draw.circle(screen, (80, 80, 80), joy_pos, JOY_STICK_RADIUS)
     
+    
     pygame.display.flip()
 
 async def main():
-    global running, hp, dmgcd, objects, state, current_song_path, route, TOTAL_TIME, is_mobile, game_mode, time_scale, is_1hp, is_zen, input_active, input_text, custom_route, pygame
+    global running, hp, dmgcd, objects, state, current_song_path, route, TOTAL_TIME, is_mobile, game_mode, time_scale, is_1hp, is_zen, input_active, input_text, custom_route, pygame, shake_amount, joy_pos, show_joystick
     screen = pygame.display.set_mode((1280, 720))
     player = Player(W//2, H//2, 25)
-    shake_amount, route_index, music_time = 0, 0, 0
+    route_index, music_time = 0, 0
     damage_flash = 0 
     pg = pygame 
     
@@ -321,9 +389,9 @@ async def main():
         keys = pygame.key.get_pressed()
         joy_axis = get_joy_axis()
         start_trigger = False 
-
+        pressed_keys = pygame.key.get_pressed()
         for e in events:
-            if e.type == pygame.QUIT: running = False
+            if e.type == pygame.QUIT: running = False; break
             
             if input_active:
                 if e.type == pygame.KEYDOWN:
@@ -352,7 +420,24 @@ async def main():
                     elif e.unicode and e.key not in [pygame.K_ESCAPE, pygame.K_LCTRL, pygame.K_RCTRL]:
                         input_text += e.unicode
                 continue
-
+            if e.type == pygame.FINGERDOWN or e.type == pygame.FINGERMOTION:
+                is_mobile = True
+                fx, fy = e.x * W, e.y * H
+                # Eğer dokunma joystick alanı civarındaysa joy_pos'u güncelle
+                if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
+                    is_touching = True
+                    dx, dy = fx - JOY_CENTER[0], fy - JOY_CENTER[1]
+                    dist = math.hypot(dx, dy)
+                    if dist > JOY_RADIUS:
+                        dx, dy = (dx/dist)*JOY_RADIUS, (dy/dist)*JOY_RADIUS
+                    joy_pos = [JOY_CENTER[0] + dx, JOY_CENTER[1] + dy]
+                if e.type == pygame.FINGERDOWN:
+                    fx, fy = e.x * W, e.y * H
+                    if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 2:
+                        is_touching = True; show_joystick = True; touch_id = e.finger_id
+            if e.type == pygame.FINGERUP:
+                if e.finger_id == touch_id:
+                    is_touching = False; joy_pos = list(JOY_CENTER); touch_id = None
             if e.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
                 if e.type == pygame.MOUSEBUTTONDOWN: pos = e.pos
                 else: pos = (e.x * W, e.y * H)
@@ -381,21 +466,22 @@ async def main():
             pygame.display.flip()
             
             if start_trigger:
+                state = "GAME" # Durumu her zaman GAME'e çek
+                objects = []      # Eski objeleri temizle
+                route_index = 0
                 if custom_route:
                     route = custom_route
                     pygame.mixer.music.stop()
                     TOTAL_TIME = 600
                 else:
-                    # CACHED_DATA'dan route'u al, temp_route ile vakit kaybetme
                     route = CACHED_DATA.get(current_song_path, [])
-                    
                     p = current_song_path
                     if time_scale > 1.0: p = SONGS[p].get("fast", p)
                     elif time_scale < 1.0: p = SONGS[p].get("slow", p)
                     
                     pygame.mixer.music.load(p)
-                    pygame.mixer.music.play()
-                    # Müzik uzunluğunu bir kez al
+                    # MÜZİĞİ İLERİ SAR: play fonksiyonuna start parametresi ekliyoruz
+                    pygame.mixer.music.play(start=SKIP_TIME)
                     TOTAL_TIME = pygame.mixer.Sound(p).get_length()
 
                 spawn_times = []
@@ -404,9 +490,17 @@ async def main():
                     spawn_times.append(current_sum)
                     current_sum += d["duration"] / time_scale
                 
-                music_time, route_index, objects = 0, 0, []
+                # BAŞLANGIÇ DEĞERLERİNİ AYARLA
+                music_time = SKIP_TIME
+                
+                # O saniyeye kadar olan blokları atla (route_index'i bul)
+                route_index = 0
+                while route_index < len(spawn_times) and spawn_times[route_index] < SKIP_TIME:
+                    route_index += 1
+                
+                objects = []
                 shake_amount, damage_flash = 0, 0
-                hp = 1 if is_1hp else 5
+                hp = 1 if is_1hp else 10
                 player.x, player.y = W//2, H//2
                 player.velx, player.vely = 0, 0
                 state = "GAME"
@@ -415,9 +509,13 @@ async def main():
             if custom_route:
                 music_time += (raw_ms / 1000.0) 
             else:
+                # get_pos() ms cinsinden şarkının BAŞLADIĞI andan itibaren süreyi verir.
+                # SKIP_TIME ile toplamazsak bloklar 0. saniyeden başlar.
                 m_pos = pygame.mixer.music.get_pos()
-                if m_pos > 0: music_time = m_pos / 1000.0
-                else: music_time += (raw_ms / 1000.0)
+                if m_pos >= 0:
+                    music_time = (m_pos / 1000.0) + SKIP_TIME
+                else:
+                    music_time += (raw_ms / 1000.0)
 
             if shake_amount > 0:
                 shake_amount -= 40 * (raw_ms / 1000.0)
@@ -425,17 +523,32 @@ async def main():
 
             while route_index < len(route) and music_time >= spawn_times[route_index]:
                 d = route[route_index]
-                objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], blast=d.get("blast"), effect=d.get("effect"), turn=d.get("turn", 0)))
+                cur = d.get("type", "object")
+                if cur == "object":
+                    objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], blast=d.get("blast"), effect=d.get("effect")))
+                elif cur == "block":
+                    objects.append(Block(tuple(d["pos"]), tuple(d["size"]), tuple(d["color"]), d["etime"], d["adisplay"]))
                 route_index += 1
 
             player.move(dt, keys, joy_axis)
             for obj in objects[:]:
-                obj.move(dt)
-                if not is_zen and player.rect.colliderect(obj.rect) and dmgcd <= 0 and obj.blast is None:
-                    hp -= 1
-                    dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
-                    hit_sound.play()
-                    obj.remove()
+                if isinstance(obj, Object):
+                    obj.move(dt)
+                    if not is_zen and dmgcd <= 0 and obj.blast is None and player.rect.colliderect(obj.rect):
+                        hp -= 1
+                        dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
+                        hit_sound.play()
+                        obj.remove()
+                elif isinstance(obj, Block):
+                    obj.update(dt)
+                    if obj.end:
+                        if obj in objects: objects.remove(obj)
+                        continue
+                    # BLOK ÇARPIŞMASI (Sadece hasar aktifken ve 1 kere vuracak şekilde)
+                    if not is_zen and dmgcd <= 0 and obj.dmg and player.rect.colliderect(obj.rect):
+                        hp -= 1
+                        dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
+                        hit_sound.play()
 
             if dmgcd > 0: dmgcd -= dt
             if damage_flash > 0: damage_flash -= dt * 2
@@ -444,16 +557,16 @@ async def main():
             draw_game_ui(hp, music_time, shake_amount)
 
             if hp <= 0:
-                cur_p = round(music_time/max(1, TOTAL_TIME)*100, 1)
-                save_score(SONGS[current_song_path]["name"] if not custom_route else "Custom", cur_p)
-                draw_overlay("GAME OVER", f"Progress: %{cur_p}", "#ff0000")
-                pygame.display.flip()
                 pygame.mixer.music.stop()
-                await asyncio.sleep(0.5)
+                draw_overlay("GAME OVER", "RESTARTING...", "#ff0000")
+                pygame.display.flip()
+                await asyncio.sleep(0.4) 
                 
+                # ÖNEMLİ: Listeyi burada temizle ve döngüyü kır
+                objects = []
                 start_trigger = True
-                state = "MENU"
-                objects, route_index, music_time = [], 0, 0
+                state = "MENU" # Önce MENU yap ki start_trigger onu tekrar GAME'e çeksin
+                continue # Bu karedeki işlemi burada kes, başa dön
 
             if music_time >= TOTAL_TIME - 0.5:
                 state = "WIN"
