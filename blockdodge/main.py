@@ -67,13 +67,27 @@ def get_mode_suffix():
     if time_scale > 1.0: suffix += "_FAST"
     elif time_scale < 1.0: suffix += "_SLOW"
     return suffix
-
-def save_score(song, percent):
-    if is_zen: return # Zen skor kaydetmez
+def save_score(song_path, percent):
+    if is_zen: return # Zen modunda skor kaydedilmez
+    
+    # Şarkı ismini SONGS sözlüğünden çek
+    song_info = SONGS.get(song_path)
+    if not song_info: return
+    
+    song_name = song_info["name"]
     mode = get_mode_suffix()
-    key = f"{song}_{mode}"
-    high_scores[key] = max(high_scores.get(key, 0), percent)
-    with open("scores.json", "w") as f: json.dump(high_scores, f)
+    key = f"{song_name}_{mode}"
+    
+    # Mevcut skoru kontrol et ve en yükseğini al
+    current_best = high_scores.get(key, 0)
+    if percent > current_best:
+        high_scores[key] = percent
+        try:
+            with open("scores.json", "w") as f:
+                json.dump(high_scores, f, indent=4)
+            print(f"Skor Kaydedildi: {key} - %{percent}")
+        except Exception as e:
+            print(f"Skor yazma hatası: {e}")
 
 # Mod Ayarları ve Butonlarını Güncelle (global alan):
 game_mode = "NORMAL" 
@@ -82,7 +96,7 @@ BTN_ZEN = pygame.Rect(W/2 - 160, H - 70, 140, 40)
 BTN_FAST = pygame.Rect(W/2 + 10, H - 70, 140, 40)
 BTN_SLOW = pygame.Rect(W/2 + 160, H - 70, 140, 40)
 TOTAL_TIME = mus.get_length()
-hp = 5
+hp = 6
 dmgcd = 0
 
 JOY_CENTER = (180, H - 180)
@@ -150,11 +164,11 @@ def draw_menu():
     
     for i, (path, info) in enumerate(SONGS.items()):
         is_selected = (path == current_song_path)
-        color = "#00ff00" if is_selected else "#ffffff"
+        current_suffix = get_mode_suffix()
+        score_key = f"{info['name']}_{current_suffix}"
+        display_score = high_scores.get(score_key, 0)
         
-        # Skorları dinamik suffix ile çek
-        display_score = high_scores.get(f"{info['name']}_{current_suffix}", 0)
-        cached_draw(f"{'> ' if is_selected else ''}{info['name']} (Best {current_suffix}: %{display_score})", color, (W/2, H/2 + (i * 50)), True)
+        cached_draw(f"{'> ' if is_selected else ''}{info['name']} (Best: %{display_score})", "#ffffff", (W/2, H/2 + (i * 50)), True)
 
     # Butonları Çiz (is_1hp, is_zen ve time_scale'e göre renk değişimi)
     modes = [
@@ -225,7 +239,7 @@ class Object:
         self.color = col
         self.size = size
         self.travel_time = max(travel_time, 0.01)
-        self.spawn_time = spawn_time # Merminin doğduğu müzik saniyesi
+        self.spawn_time = spawn_time
         self.start_pos = list(pos)
         self.rect = pygame.Rect(0, 0, size, size)
         self.blast = blast
@@ -233,22 +247,17 @@ class Object:
         self.mainc = col
         
     def move(self, current_music_time):
-        # Merminin ne kadar süredir hayatta olduğunu müzik zamanına göre hesapla
         elapsed = current_music_time - self.spawn_time
         t = min(elapsed / self.travel_time, 1)
-        
-        # Eğer henüz doğma zamanı gelmediyse (negatifse) hareket etme
         if t < 0: return 
 
         progression = 1 - (1 - t) ** 3 if self.easing == "ease-out" else t
-        
         if progression >= 0.9 and self.effect is not None:
             self.color = self.effect if self.color != self.effect else self.mainc
 
         self.pos[0] = self.start_pos[0] + (self.target[0] - self.start_pos[0]) * progression
         self.pos[1] = self.start_pos[1] + (self.target[1] - self.start_pos[1]) * progression
         self.rect.center = (self.pos[0], self.pos[1])
-        
         if t >= 1: self.remove()
 
     def remove(self):
@@ -258,49 +267,61 @@ class Object:
                 dir = math.radians(360/self.blast*n)
                 tx = self.pos[0] + math.cos(dir) * 500
                 ty = self.pos[1] + math.sin(dir) * 500
-                # Patlamadan çıkan küçük parçaların doğuş zamanı tam şu anki müzik zamanıdır
                 objects.append(Object(self.pos, (tx, ty), "ease-out", self.color, 10, 1.0, self.spawn_time + self.travel_time))
         if self in objects: objects.remove(self)
 
+    def draw(self, ox=0, oy=0): # Draw metodu eklendi
+        sr = self.rect.copy()
+        sr.x += ox; sr.y += oy
+        pygame.draw.rect(screen, self.color, sr)
+        if self.blast: 
+            cached_draw(self.blast, "#000000", sr.center, True)
+
 class Block:
-    def __init__(self, center: tuple, size: tuple, color: tuple, etime: float | int, adisplay: float | int):
-        self.x = center[0]
-        self.y = center[1]
-        self.sizex = size[0]
-        self.sizey = size[1]
+    def __init__(self, center: tuple, size: tuple, color: tuple, spawn_time: float, etime: float, adisplay: float):
         self.rect = pygame.Rect(0, 0, size[0], size[1])
-        self.rect.center = (self.x, self.y)
-        self.color = color
+        self.rect.center = center
         self.maincolor = color
+        self.color = color
+        self.spawn_time = spawn_time
         self.etime = etime
-        self.dmg = False
-        self.starttime = etime
         self.adisplay = adisplay
+        self.dmg = False
+        self.end = False
         self.a = 0.5
         self.set_col()
-        self.end = False
+        self.current_life = 0 # Çizim için süreyi saklayalım
 
     def set_col(self):
         r, g, b = self.maincolor
-        r = int(r * (1 - self.a))
-        g = int(g * (1 - self.a))
-        b = int(b * (1 - self.a))
-        self.color = (r, g, b)
-    
-    def draw(self):
-        pygame.draw.rect(screen, self.color, self.rect)
+        self.color = (int(r * (1 - self.a)), int(g * (1 - self.a)), int(b * (1 - self.a)))
 
-    def update(self, dt): # dt parametresini ekledik
+    def update(self, current_music_time):
         global shake_amount
-        self.etime -= dt
-        if self.etime <= 0:
+        self.current_life = current_music_time - self.spawn_time
+        
+        if self.current_life >= self.etime: 
             self.end = True
-        if self.starttime - self.etime >= self.adisplay:
-            if not self.dmg: # Sadece patladığı an sarsıntı yap
-                self.dmg = True
-                self.a = 0
-                self.set_col()
-                shake_amount = 5
+        
+        if self.current_life >= self.adisplay and not self.dmg:
+            self.dmg = True
+            self.a = 0
+            self.set_col()
+            shake_amount = 15
+
+    def draw(self, ox=0, oy=0):
+        sr = self.rect.copy()
+        sr.x += ox; sr.y += oy
+        pygame.draw.rect(screen, self.color, sr)
+        
+        # Eğer blok henüz aktifleşmemişse (dmg False), üzerine kalan süreyi yaz
+        if not self.dmg:
+            remaining = self.adisplay - self.current_life
+            if remaining > 0:
+                # Süreyi 0.1 hassasiyetle göster (Örn: 0.8)
+                time_text = f"{remaining:.1f}"
+                # Yazının rengi bloğun ana rengiyle aynı olsun ki okunabilsin (veya beyaz yapabilirsin)
+                cached_draw(time_text, "#000000", sr.center, True)
 
 def get_joy_axis():
     if not is_touching: return [0, 0]
@@ -331,60 +352,37 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, shake=0, dam
 
     screen.fill("#000000")
 
-    # Hasar yiyince ekran kenarlarını kırmızı parlat
     if damage_flash > 0:
         overlay = pygame.Surface((W, H))
-        overlay.set_alpha(int(damage_flash * 150)) # Parlama şiddeti
+        overlay.set_alpha(int(damage_flash * 150))
         overlay.fill((200, 0, 0))
         screen.blit(overlay, (0, 0))
     
-    # Progress Bar (Sarsıntıdan etkilenir)
+    # Progress Bar
     bar_width = (current_time / max(1, TOTAL_TIME)) * W
-    pygame.draw.rect(screen, (50, 50, 50), (ox, oy, W, 8))
-    pygame.draw.rect(screen, (255, 255, 255), (ox, oy, bar_width, 8))
+    pygame.draw.rect(screen, (50, 50, 50), (0, 0, W, 8)) # Bar sarsılmasın dersen ox/oy sil
+    pygame.draw.rect(screen, (255, 255, 255), (0, 0, bar_width, 8))
 
+    # Tüm objeleri çiz (Artık hepsinin kendi draw metodu var)
     for obj in objects:
-        if isinstance(obj, Block):
-            obj.draw()
-
-    for obj in objects:
-        if isinstance(obj, Object):
-            sr = obj.rect.copy()
-            sr.x += ox; sr.y += oy
-            pygame.draw.rect(screen, obj.color, obj.rect)
-            if obj.blast: cached_draw(obj.blast, "#000000", sr.center, True)
+        obj.draw(ox, oy)
     
+    # Oyuncu ve UI Çizimleri... (Geri kalan kod aynı)
+    if dmgcd <= 0 or int(pygame.time.get_ticks() / 50) % 2 == 0:
+        pygame.draw.circle(screen, "#ffffff", (player.rect.centerx + ox, player.rect.centery + oy), 12.5)
+
     if is_mobile:
         pygame.draw.rect(screen, (100, 100, 100), BTN_ESC, 0, border_radius=5)
         cached_draw("MENU", "#ffffff", BTN_ESC.center, True)
-
-    # Joystick Çizimi
-    if is_mobile: # show_joystick yerine is_mobile kullanmak daha garantidir
         pygame.draw.circle(screen, (255, 255, 255), JOY_CENTER, JOY_RADIUS, 2)
         pygame.draw.circle(screen, (150, 150, 150), joy_pos, JOY_STICK_RADIUS)
-    
-    # Oyuncuyu çiz (Dmgcd varken yanıp söner)
-    if dmgcd <= 0 or int(pygame.time.get_ticks() / 50) % 2 == 0:
-        pygame.draw.circle(screen, "#ffffff", (player.rect.centerx + ox, player.rect.centery + oy), 12.5)
-    
-    # --- UI BİLGİLERİ (Geri Eklenen Kısımlar) ---
-    # Can Göstergesi
+
     cached_draw(f"HP: {hp}", "#ffffff", (65 + ox, 35 + oy))
-    
-    # Süre (00:00 / 00:00 formatı)
     m, s = divmod(int(current_time), 60)
     sm, ss = divmod(int(TOTAL_TIME), 60)
     cached_draw(f"{m:02d}:{s:02d} / {sm:02d}:{ss:02d}", "#ffffff", (W/2 + ox, 35 + oy), True)
-    
-    # Yüzde Göstergesi
-    progress_percent = round((current_time / max(1, TOTAL_TIME)) * 100, 1)
-    progress_percent = min(100.0, progress_percent)
+    progress_percent = min(100.0, round((current_time / max(1, TOTAL_TIME)) * 100, 1))
     cached_draw(f"%{progress_percent}", "#ffffff", (W/2 + ox, 70 + oy), True)
-
-    if show_joystick and is_mobile:
-        pygame.draw.circle(screen, (40, 40, 40), JOY_CENTER, JOY_RADIUS, 2)
-        pygame.draw.circle(screen, (80, 80, 80), joy_pos, JOY_STICK_RADIUS)
-    
     
     pygame.display.flip()
 
@@ -535,11 +533,18 @@ async def main():
 
             while route_index < len(route) and music_time >= spawn_times[route_index]:
                 d = route[route_index]
-                st = spawn_times[route_index] # Tam doğuş anı
+                st = spawn_times[route_index]
                 if d.get("type") == "block":
-                    objects.append(Block(tuple(d["pos"]), tuple(d["size"]), tuple(d["color"]), st + d["etime"], d["adisplay"]))
+                    # JSON'dan gelen değerleri Block sınıfına pasla
+                    objects.append(Block(
+                        tuple(d["pos"]), 
+                        tuple(d["size"]), 
+                        tuple(d["color"]), 
+                        st,              # spawn_time
+                        d["etime"],      # toplam süre
+                        d["adisplay"]    # aktifleşme gecikmesi
+                    ))
                 else:
-                    # Yeni parametre: st (spawn_time)
                     objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], st, blast=d.get("blast"), effect=d.get("effect")))
                 route_index += 1
 
@@ -548,15 +553,25 @@ async def main():
             
             for obj in objects[:]:
                 if isinstance(obj, Object):
-                    # ARTIK dt DEĞİL music_time GÖNDERİYORUZ
                     obj.move(music_time) 
                     if not is_zen and dmgcd <= 0 and player.rect.colliderect(obj.rect):
-                        hp -= 1; dmgcd, shake_amount, damage_flash = 2, 15, 1.0; hit_sound.play()
+                        # Blast (uyarı mermisi) değilse hasar ver
+                        if obj.blast is None:
+                            hp -= 1
+                            dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
+                            hit_sound.play()
+                            obj.remove()
+                
                 elif isinstance(obj, Block):
-                    obj.update(music_time) # MÜZİK ZAMANINI GÖNDERİYORUZ
-                    if obj.end: objects.remove(obj)
-                    elif not is_zen and dmgcd <= 0 and obj.dmg and player.rect.colliderect(obj.rect):
-                        hp -= 1; dmgcd, shake_amount, damage_flash = 2, 15, 1.0; hit_sound.play()
+                    obj.update(music_time)
+                    if obj.end:
+                        if obj in objects: objects.remove(obj)
+                        continue
+                    # Blok patlamışsa (dmg=True) ve oyuncuya değiyorsa hasar ver
+                    if not is_zen and dmgcd <= 0 and obj.dmg and player.rect.colliderect(obj.rect):
+                        hp -= 1
+                        dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
+                        hit_sound.play()
 
             if dmgcd > 0: dmgcd -= dt
             if damage_flash > 0: damage_flash -= dt * 2
@@ -564,9 +579,12 @@ async def main():
             draw(objects, player, hp, show_joystick, joy_pos, music_time, shake_amount, damage_flash)
 
             if hp <= 0:
-                pygame.mixer.music.stop(); draw_overlay("GAME OVER", "RESTARTING...", "#ff0000")
+                current_percent = round((music_time / max(1, TOTAL_TIME)) * 100, 1)
+                save_score(current_song_path, current_percent)
+                
+                draw_overlay("GAME OVER", f"%{current_percent}", "#ff0000")
                 pygame.display.flip(); await asyncio.sleep(0.5); start_trigger = True; continue
-            if music_time >= TOTAL_TIME - 0.5: state = "WIN"
+            if music_time >= TOTAL_TIME - 0.5: state = "WIN"; save_score(current_song_path, 100.0)
 
         elif state == "MENU":
             draw_menu(); pygame.display.flip()
