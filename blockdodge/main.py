@@ -26,7 +26,7 @@ if IS_WEB:
 high_scores = {}
 if os.path.exists("scores.json"):
     with open("scores.json", "r") as f: high_scores = json.load(f)
-SKIP_TIME = 0
+SKIP_TIME = 35
 shake_amount = 0
 
 # Mobil Buton Bölgeleri
@@ -96,7 +96,7 @@ BTN_ZEN = pygame.Rect(W/2 - 160, H - 70, 140, 40)
 BTN_FAST = pygame.Rect(W/2 + 10, H - 70, 140, 40)
 BTN_SLOW = pygame.Rect(W/2 + 160, H - 70, 140, 40)
 TOTAL_TIME = mus.get_length()
-hp = 6
+hp = 10
 dmgcd = 0
 
 JOY_CENTER = (180, H - 180)
