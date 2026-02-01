@@ -5,7 +5,6 @@ IS_WEB = sys.platform == "emscripten"
 
 if IS_WEB:
     import platform
-    # Pygame-web'de browser yerine genelde js kullanılır
     try:
         from js import window, prompt
     except ImportError:
@@ -99,12 +98,12 @@ BTN_ESC = pygame.Rect(W - 120, 20, 100, 50) # Oyun içi ESC butonu
 
 is_mobile = False
 if IS_WEB:
-    # Web'de dokunmatik bir cihaz olup olmadığını kontrol et
     try:
-        import browser
-        if "Mobile" in browser.window.navigator.userAgent:
+        from js import window
+        if "Mobile" in window.navigator.userAgent:
             is_mobile = True
-    except: pass
+    except: 
+        pass
 
 # Verileri önbelleğe al (Lagı önlemek için)
 
