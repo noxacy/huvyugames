@@ -17,12 +17,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pygbag --upgrade
-          python -m pip install numpy
+          python -m pip install "pygbag>=0.9.1" --upgrade
 
       - name: Build and Organize All Games
         run: |
