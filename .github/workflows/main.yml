@@ -49,8 +49,13 @@ jobs:
               # --- THE FIX STARTS HERE ---
               # Copy the thumbnail and any other images from the game folder
               # '|| true' prevents the script from crashing if no images exist
+              # --- THE FIX STARTS HERE ---
+              # Sadece resimleri değil, her şeyi (assets klasörü dahil) kopyala
+              cp -r "$dirname/assets" "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.jpg "deploy/$dirname/" 2>/dev/null || true
+              cp "$dirname"/*.json "deploy/$dirname/" 2>/dev/null || true
+              # --- THE FIX ENDS HERE ---
               # --- THE FIX ENDS HERE ---
 
               if [ -f "$dirname/${dirname}_play.html" ]; then
