@@ -148,6 +148,8 @@ for path, info in SONGS.items():
         print(f"Yükleme hatası ({info['name']}): {e}")
         CACHED_DATA[path] = []
 
+overlay_surface = pygame.Surface((W, H), pygame.SRCALPHA)
+
 def draw_overlay(title, subtitle, color="#ffffff"):
     # Arka planı hafif karart
     overlay = pygame.Surface((W, H), pygame.SRCALPHA)
@@ -321,7 +323,7 @@ class Block:
                 # Süreyi 0.1 hassasiyetle göster (Örn: 0.8)
                 time_text = f"{remaining:.1f}"
                 # Yazının rengi bloğun ana rengiyle aynı olsun ki okunabilsin (veya beyaz yapabilirsin)
-                cached_draw(time_text, "#000000", sr.center, True)
+                cached_draw(time_text, "#000000", sr.center, True, GAME_FONT_BIG)
 
 def get_joy_axis():
     if not is_touching: return [0, 0]
@@ -337,8 +339,9 @@ def get_joy_axis():
     return [dx / max_dist * (clamped_dist / dist), dy / max_dist * (clamped_dist / dist)]
 
 text_cache = {}
-def cached_draw(text, color, position, center=False):
-    font = pygame.font.SysFont(None, 35)
+GAME_FONT = pygame.font.SysFont(None, 35)
+GAME_FONT_BIG = pygame.font.SysFont(None, 75)
+def cached_draw(text, color, position, center=False, font=GAME_FONT):
     key = (str(text), color)
     if key not in text_cache: text_cache[key] = font.render(str(text), True, color).convert_alpha()
     surf = text_cache[key]
