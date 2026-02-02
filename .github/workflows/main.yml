@@ -56,6 +56,9 @@ jobs:
               if [ -f "$dirname/${dirname}_play.html" ]; then
                 cp "$dirname/${dirname}_play.html" "deploy/$dirname/"
               fi
+              if [ -f "$dirname/${dirname}_guide.html" ]; then
+                cp "$dirname/${dirname}_play.html" "deploy/$dirname/"
+              fi
             fi
           done
 
