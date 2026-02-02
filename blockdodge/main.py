@@ -518,7 +518,7 @@ async def main():
 
             spawn_times = [0]
             curr = 0
-            for d in route:
+            for d in route: 
                 curr += d["duration"] / time_scale
                 spawn_times.append(curr)
             
