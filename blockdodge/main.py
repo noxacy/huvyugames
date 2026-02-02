@@ -96,7 +96,7 @@ BTN_ZEN = pygame.Rect(W/2 - 160, H - 70, 140, 40)
 BTN_FAST = pygame.Rect(W/2 + 10, H - 70, 140, 40)
 BTN_SLOW = pygame.Rect(W/2 + 160, H - 70, 140, 40)
 TOTAL_TIME = mus.get_length()
-hp = 10
+hp = 5
 dmgcd = 0
 
 JOY_CENTER = (180, H - 180)
@@ -293,6 +293,7 @@ class Block:
         self.a = 0.5
         self.set_col()
         self.current_life = 0 # Çizim için süreyi saklayalım
+        self.size = size
 
     def set_col(self):
         r, g, b = self.maincolor
@@ -312,6 +313,10 @@ class Block:
             shake_amount = 15
 
     def draw(self, ox=0, oy=0):
+        if self.size[0] > self.size[1]:
+            font = pygame.font.SysFont(None, int(math.sqrt(self.size[0]**2+self.size[0]**2)/2.5))
+        else:
+            font = pygame.font.SysFont(None, int(math.sqrt(self.size[1]**2+self.size[1]**2)/2.5))
         sr = self.rect.copy()
         sr.x += ox; sr.y += oy
         pygame.draw.rect(screen, self.color, sr)
@@ -323,7 +328,7 @@ class Block:
                 # Süreyi 0.1 hassasiyetle göster (Örn: 0.8)
                 time_text = f"{remaining:.1f}"
                 # Yazının rengi bloğun ana rengiyle aynı olsun ki okunabilsin (veya beyaz yapabilirsin)
-                cached_draw(time_text, "#000000", sr.center, True, GAME_FONT_BIG)
+                cached_draw(time_text, "#000000", sr.center, True, font)
 
 def get_joy_axis():
     if not is_touching: return [0, 0]
@@ -340,7 +345,6 @@ def get_joy_axis():
 
 text_cache = {}
 GAME_FONT = pygame.font.SysFont(None, 35)
-GAME_FONT_BIG = pygame.font.SysFont(None, 75)
 def cached_draw(text, color, position, center=False, font=GAME_FONT):
     key = (str(text), color)
     if key not in text_cache: text_cache[key] = font.render(str(text), True, color).convert_alpha()
@@ -561,7 +565,7 @@ async def main():
                         # Blast (uyarı mermisi) değilse hasar ver
                         if obj.blast is None:
                             hp -= 1
-                            dmgcd, shake_amount, damage_flash = 1.0, 15, 1.0
+                            dmgcd, shake_amount, damage_flash = 2.0, 15, 1.0
                             hit_sound.play()
                             obj.remove()
                 
