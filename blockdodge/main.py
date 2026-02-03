@@ -300,13 +300,19 @@ class Block:
         self.color = (int(r * (1 - self.a)), int(g * (1 - self.a)), int(b * (1 - self.a)))
 
     def update(self, current_music_time):
-        global shake_amount
+        global shake_amount, time_scale
+        # Müzik zamanı ile spawn zamanı farkını alıyoruz
         self.current_life = current_music_time - self.spawn_time
         
-        if self.current_life >= self.etime: 
+        # Hızlı modda (time_scale > 1) blokların daha hızlı patlaması ve yok olması gerekir
+        # Bu yüzden karşılaştırma yaptığımız süreleri time_scale'e bölüyoruz
+        scaled_etime = self.etime / time_scale
+        scaled_adisplay = self.adisplay / time_scale
+
+        if self.current_life >= scaled_etime: 
             self.end = True
         
-        if self.current_life >= self.adisplay and not self.dmg:
+        if self.current_life >= scaled_adisplay and not self.dmg:
             self.dmg = True
             self.a = 0
             self.set_col()
@@ -474,10 +480,28 @@ async def main():
                         input_text += e.unicode
                 continue
 
-            # Menü Tıklamaları
             if state == "MENU":
                 if e.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
-                    pos = e.pos if e.type == pygame.MOUSEBUTTONDOWN else (e.x * W, e.y * H)
+                    # Koordinat belirleme (Mobil/PC uyumlu)
+                    if e.type == pygame.MOUSEBUTTONDOWN:
+                        pos = e.pos
+                    else:
+                        pos = (e.x * W, e.y * H)
+
+                    # Mod Butonları Kontrolü
+                    if BTN_1HP.collidepoint(pos): is_1hp = not is_1hp
+                    elif BTN_ZEN.collidepoint(pos): is_zen = not is_zen
+                    elif BTN_FAST.collidepoint(pos): 
+                        time_scale = 1.2 if time_scale != 1.2 else 1.0
+                    elif BTN_SLOW.collidepoint(pos): 
+                        time_scale = 0.75 if time_scale != 0.75 else 1.0
+                    
+                    # Şarkı Seçimi Kontrolü
+                    for i in range(len(SONGS)):
+                        # Tıklanan yer şarkı listesi hizasındaysa seç
+                        if H/2 + (i * 50) - 25 < pos[1] < H/2 + (i * 50) + 25:
+                            current_song_path = list(SONGS.keys())[i]
+                    
                     if BTN_CUSTOM.collidepoint(pos):
                         if IS_WEB:
                             paste_data = window.prompt("Paste JSON:")
@@ -487,14 +511,8 @@ async def main():
                                     custom_route = data["route"]; input_text = "JSON Loaded!"
                                 except: input_text = "Invalid!"
                         else: input_active = True; input_text = ""
-                    elif BTN_START.collidepoint(pos): start_trigger = True
-                    elif BTN_1HP.collidepoint(pos): is_1hp = not is_1hp
-                    elif BTN_ZEN.collidepoint(pos): is_zen = not is_zen
-                    elif BTN_FAST.collidepoint(pos): time_scale = 1.2 if time_scale != 1.2 else 1.0
-                    elif BTN_SLOW.collidepoint(pos): time_scale = 0.75 if time_scale != 0.75 else 1.0
-                    for i in range(len(SONGS)):
-                        if H/2 + (i * 50) - 25 < pos[1] < H/2 + (i * 50) + 25:
-                            current_song_path = list(SONGS.keys())[i]
+                    elif BTN_START.collidepoint(pos): 
+                        start_trigger = True
                 if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE: start_trigger = True
 
             elif state == "GAME":
