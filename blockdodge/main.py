@@ -491,7 +491,7 @@ async def main():
                 running = False
                 break
             
-            # --- KOORDİNAT BELİRLEME ---
+            # --- 1. KOORDİNAT SİSTEMİ (HATASIZ) ---
             mx, my = -1, -1
             if e.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = e.pos
@@ -499,17 +499,12 @@ async def main():
                 mx, my = e.x * W, e.y * H
                 is_mobile = True
 
-            # --- 1. OYUN İÇİ KONTROLLER ---
+            # --- 2. JOYSTICK VE ESC (OYUN İÇİ) ---
             if state == "GAME":
-                # ESC Butonu (Dokunmatik veya Mouse)
-                if mx != -1 and BTN_ESC.collidepoint(mx, my):
-                    pygame.mixer.music.stop()
-                    state = "MENU"
-                
-                # Joystick Hareketleri
-                if e.type == pygame.FINGERDOWN or e.type == pygame.FINGERMOTION:
+                if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION]:
                     fx, fy = e.x * W, e.y * H
-                    if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
+                    # Eğer parmak joystick alanındaysa joystick'i oynat
+                    if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.8:
                         is_touching = True
                         touch_id = e.finger_id
                         joy_pos[0], joy_pos[1] = fx, fy
@@ -517,24 +512,13 @@ async def main():
                 if e.type == pygame.FINGERUP and (touch_id is None or e.finger_id == touch_id):
                     is_touching = False
                     joy_pos = list(JOY_CENTER)
+                
+                # Oyun içi ESC (Hem parmak hem mouse)
+                if mx != -1 and BTN_ESC.collidepoint(mx, my):
+                    pygame.mixer.music.stop(); state = "MENU"
 
-            # --- 2. MENÜ KONTROLLERİ ---
+            # --- 3. MENÜ BUTONLARI (TEK TIKLA ÇALIŞIR) ---
             elif state == "MENU":
-                # Klavye Girişleri (JSON Yazma Modu)
-                if input_active and e.type == pygame.KEYDOWN:
-                    if e.key == pygame.K_RETURN:
-                        input_active = False
-                        try:
-                            data = json.loads(input_text)
-                            custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
-                            input_text = "JSON Loaded!"
-                        except: input_text = "Invalid JSON!"
-                    elif e.key == pygame.K_BACKSPACE: input_text = input_text[:-1]
-                    elif e.key == pygame.K_ESCAPE: input_active = False
-                    elif e.unicode: input_text += e.unicode
-                    continue
-
-                # Tıklamalar (Mouse veya Parmak)
                 if mx != -1:
                     # Şarkı Seçimi
                     m_start_y = 220
@@ -542,7 +526,7 @@ async def main():
                         if m_start_y + (i * 60) - 30 < my < m_start_y + (i * 60) + 30:
                             current_song_path = list(SONGS.keys())[i]
 
-                    # Modifierlar
+                    # Modifier Butonları
                     if BTN_1HP.collidepoint(mx, my): is_1hp = not is_1hp
                     elif BTN_ZEN.collidepoint(mx, my): is_zen = not is_zen
                     elif BTN_FAST.collidepoint(mx, my): time_scale = 1.2 if time_scale != 1.2 else 1.0
@@ -563,11 +547,23 @@ async def main():
                     elif BTN_START.collidepoint(mx, my):
                         start_trigger = True
 
-            # --- 3. GENEL KLAVYE TUŞLARI ---
+            # --- 4. KLAVYE (MASAÜSTÜ İÇİN ŞART) ---
             if e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_SPACE and state == "MENU": start_trigger = True
-                if e.key == pygame.K_ESCAPE and state == "GAME":
-                    pygame.mixer.music.stop(); state = "MENU"
+                if input_active:
+                    if e.key == pygame.K_RETURN:
+                        input_active = False
+                        try:
+                            data = json.loads(input_text)
+                            custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
+                            input_text = "JSON Loaded!"
+                        except: input_text = "Invalid JSON!"
+                    elif e.key == pygame.K_BACKSPACE: input_text = input_text[:-1]
+                    elif e.key == pygame.K_ESCAPE: input_active = False
+                    elif e.unicode: input_text += e.unicode
+                else:
+                    if e.key == pygame.K_SPACE and state == "MENU": start_trigger = True
+                    if e.key == pygame.K_ESCAPE and state == "GAME":
+                        pygame.mixer.music.stop(); state = "MENU"
 
         # 2. BAŞLATMA
         if start_trigger:
