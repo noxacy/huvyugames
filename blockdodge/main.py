@@ -128,6 +128,12 @@ SONGS = {
         "slow": "assets/slash_inferno_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/slash_inferno_fast.ogg"  # Hızlandırılmış versiyon
     },
+    "assets/ordih.ogg": {
+        "name": "Animation Warrior Theme - Noxacy Remix (MEDIUM)",
+        "data": "assets/ordih.json",
+        "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
+        "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
+    },
     "assets/dihblaster.ogg": {
         "name": "Sonic Blaster - Noxacy Remix (HARD)",
         "data": "assets/dihblaster.json",
