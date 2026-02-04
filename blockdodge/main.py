@@ -487,39 +487,41 @@ async def main():
         keys = pygame.key.get_pressed()
 
         for e in events:
-            if e.type == pygame.QUIT: running = False; break
+            if e.type == pygame.QUIT:
+                running = False
+                break
             
-            # 1. MOBİL / DOKUNMATİK
-            if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP]:
-                fx, fy = e.x * W, e.y * H
-                if e.type == pygame.FINGERDOWN:
-                    if state == "GAME":
-                        if BTN_ESC.collidepoint(fx, fy):
-                            pygame.mixer.music.stop(); state = "MENU"
-                        elif math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
-                            is_touching = True
-                            touch_id = e.finger_id
-                    elif state == "MENU":
-                        handle_menu_click(fx, fy)
+            # --- KOORDİNAT BELİRLEME ---
+            mx, my = -1, -1
+            if e.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = e.pos
+            elif e.type == pygame.FINGERDOWN:
+                mx, my = e.x * W, e.y * H
+                is_mobile = True
 
-                if e.type == pygame.FINGERMOTION and is_touching and e.finger_id == touch_id:
-                    joy_pos[0], joy_pos[1] = fx, fy
+            # --- 1. OYUN İÇİ KONTROLLER ---
+            if state == "GAME":
+                # ESC Butonu (Dokunmatik veya Mouse)
+                if mx != -1 and BTN_ESC.collidepoint(mx, my):
+                    pygame.mixer.music.stop()
+                    state = "MENU"
                 
-                if e.type == pygame.FINGERUP and e.finger_id == touch_id:
+                # Joystick Hareketleri
+                if e.type == pygame.FINGERDOWN or e.type == pygame.FINGERMOTION:
+                    fx, fy = e.x * W, e.y * H
+                    if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
+                        is_touching = True
+                        touch_id = e.finger_id
+                        joy_pos[0], joy_pos[1] = fx, fy
+                
+                if e.type == pygame.FINGERUP and (touch_id is None or e.finger_id == touch_id):
                     is_touching = False
                     joy_pos = list(JOY_CENTER)
 
-            # 2. MOUSE (MASAÜSTÜ)
-            elif e.type == pygame.MOUSEBUTTONDOWN:
-                mx, my = e.pos
-                if state == "GAME" and BTN_ESC.collidepoint(mx, my):
-                    pygame.mixer.music.stop(); state = "MENU"
-                elif state == "MENU":
-                    handle_menu_click(mx, my)
-
-            # 3. KLAVYE
-            elif e.type == pygame.KEYDOWN:
-                if input_active:
+            # --- 2. MENÜ KONTROLLERİ ---
+            elif state == "MENU":
+                # Klavye Girişleri (JSON Yazma Modu)
+                if input_active and e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_RETURN:
                         input_active = False
                         try:
@@ -529,13 +531,43 @@ async def main():
                         except: input_text = "Invalid JSON!"
                     elif e.key == pygame.K_BACKSPACE: input_text = input_text[:-1]
                     elif e.key == pygame.K_ESCAPE: input_active = False
-                    else: input_text += e.unicode
-                else:
-                    if e.key == pygame.K_SPACE and state == "MENU": start_trigger = True
-                    if e.key == pygame.K_ESCAPE and state == "GAME":
-                        pygame.mixer.music.stop(); state = "MENU"
+                    elif e.unicode: input_text += e.unicode
+                    continue
 
-        # (Buradan aşağısı orijinal başlatma ve oyun mantığı kodlarınla devam ediyor...)
+                # Tıklamalar (Mouse veya Parmak)
+                if mx != -1:
+                    # Şarkı Seçimi
+                    m_start_y = 220
+                    for i in range(len(SONGS)):
+                        if m_start_y + (i * 60) - 30 < my < m_start_y + (i * 60) + 30:
+                            current_song_path = list(SONGS.keys())[i]
+
+                    # Modifierlar
+                    if BTN_1HP.collidepoint(mx, my): is_1hp = not is_1hp
+                    elif BTN_ZEN.collidepoint(mx, my): is_zen = not is_zen
+                    elif BTN_FAST.collidepoint(mx, my): time_scale = 1.2 if time_scale != 1.2 else 1.0
+                    elif BTN_SLOW.collidepoint(mx, my): time_scale = 0.75 if time_scale != 0.75 else 1.0
+                    
+                    # JSON ve Start
+                    elif BTN_CUSTOM.collidepoint(mx, my):
+                        if IS_WEB:
+                            paste_data = window.prompt("Paste JSON:")
+                            if paste_data:
+                                try:
+                                    data = json.loads(str(paste_data))
+                                    custom_route = data.get("route", data); input_text = "JSON Loaded!"
+                                except: input_text = "Invalid!"
+                        else:
+                            input_active = True
+                            input_text = ""
+                    elif BTN_START.collidepoint(mx, my):
+                        start_trigger = True
+
+            # --- 3. GENEL KLAVYE TUŞLARI ---
+            if e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_SPACE and state == "MENU": start_trigger = True
+                if e.key == pygame.K_ESCAPE and state == "GAME":
+                    pygame.mixer.music.stop(); state = "MENU"
 
         # 2. BAŞLATMA
         if start_trigger:
