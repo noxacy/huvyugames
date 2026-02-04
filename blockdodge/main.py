@@ -484,86 +484,99 @@ async def main():
         raw_ms = clock.tick(60) 
         dt = (raw_ms / 1000.0) * time_scale
         events = pygame.event.get()
-        keys = pygame.key.get_pressed()
-
+        
+        # --- 1. OLAY DÖNGÜSÜ ---
         for e in events:
-            if e.type == pygame.QUIT:
-                running = False
-                break
-            
-            # --- 1. KOORDİNAT SİSTEMİ (HATASIZ) ---
-            mx, my = -1, -1
-            if e.type == pygame.MOUSEBUTTONDOWN:
-                mx, my = e.pos
-            elif e.type == pygame.FINGERDOWN:
-                mx, my = e.x * W, e.y * H
-                is_mobile = True
+            if e.type == pygame.QUIT: running = False; break
 
-            # --- 2. JOYSTICK VE ESC (OYUN İÇİ) ---
+            # MOUSE VE DOKUNMATİK KOORDİNAT YAKALAMA
+            m_pos = None
+            if e.type == pygame.MOUSEBUTTONDOWN: m_pos = e.pos
+            elif e.type == pygame.FINGERDOWN: m_pos = (e.x * W, e.y * H); is_mobile = True
+
+            # --- OYUN İÇİ (GAME) ---
             if state == "GAME":
+                # Joystick Yakalama (Eskisi gibi serbest)
                 if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION]:
                     fx, fy = e.x * W, e.y * H
-                    # Eğer parmak joystick alanındaysa joystick'i oynat
-                    if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.8:
+                    # İlk dokunuş joystick alanındaysa veya zaten dokunuyorsak
+                    if is_touching or math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 2:
                         is_touching = True
                         touch_id = e.finger_id
-                        joy_pos[0], joy_pos[1] = fx, fy
-                
-                if e.type == pygame.FINGERUP and (touch_id is None or e.finger_id == touch_id):
+                        joy_pos[0], joy_pos[1] = fx, fy # Kısıtlama yok, istediği yere gider
+
+                if e.type == pygame.FINGERUP and e.finger_id == touch_id:
                     is_touching = False
                     joy_pos = list(JOY_CENTER)
                 
-                # Oyun içi ESC (Hem parmak hem mouse)
-                if mx != -1 and BTN_ESC.collidepoint(mx, my):
+                # ESC Butonu
+                if m_pos and BTN_ESC.collidepoint(m_pos):
                     pygame.mixer.music.stop(); state = "MENU"
 
-            # --- 3. MENÜ BUTONLARI (TEK TIKLA ÇALIŞIR) ---
+            # --- MENÜ (MENU) ---
             elif state == "MENU":
-                if mx != -1:
-                    # Şarkı Seçimi
+                if m_pos:
+                    mx, my = m_pos
+                    # Şarkı Seçimi (Daha geniş tıklama alanı)
                     m_start_y = 220
                     for i in range(len(SONGS)):
                         if m_start_y + (i * 60) - 30 < my < m_start_y + (i * 60) + 30:
                             current_song_path = list(SONGS.keys())[i]
 
-                    # Modifier Butonları
+                    # Modifierlar (Kesin çözüm: elif kullanmıyoruz, hepsini kontrol ediyoruz)
                     if BTN_1HP.collidepoint(mx, my): is_1hp = not is_1hp
-                    elif BTN_ZEN.collidepoint(mx, my): is_zen = not is_zen
-                    elif BTN_FAST.collidepoint(mx, my): time_scale = 1.2 if time_scale != 1.2 else 1.0
-                    elif BTN_SLOW.collidepoint(mx, my): time_scale = 0.75 if time_scale != 0.75 else 1.0
+                    if BTN_ZEN.collidepoint(mx, my): is_zen = not is_zen
+                    if BTN_FAST.collidepoint(mx, my): time_scale = 1.2 if time_scale != 1.2 else 1.0
+                    if BTN_SLOW.collidepoint(mx, my): time_scale = 0.75 if time_scale != 0.75 else 1.0
                     
-                    # JSON ve Start
-                    elif BTN_CUSTOM.collidepoint(mx, my):
+                    if BTN_CUSTOM.collidepoint(mx, my):
                         if IS_WEB:
-                            paste_data = window.prompt("Paste JSON:")
-                            if paste_data:
+                            p_data = window.prompt("Paste JSON:")
+                            if p_data:
                                 try:
-                                    data = json.loads(str(paste_data))
-                                    custom_route = data.get("route", data); input_text = "JSON Loaded!"
+                                    d = json.loads(str(p_data)); custom_route = d.get("route", d); input_text = "JSON Loaded!"
                                 except: input_text = "Invalid!"
-                        else:
-                            input_active = True
-                            input_text = ""
-                    elif BTN_START.collidepoint(mx, my):
+                        else: input_active = True; input_text = ""
+                    
+                    if BTN_START.collidepoint(mx, my):
                         start_trigger = True
 
-            # --- 4. KLAVYE (MASAÜSTÜ İÇİN ŞART) ---
+            # Klavye (Global)
             if e.type == pygame.KEYDOWN:
                 if input_active:
                     if e.key == pygame.K_RETURN:
                         input_active = False
                         try:
-                            data = json.loads(input_text)
-                            custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
-                            input_text = "JSON Loaded!"
-                        except: input_text = "Invalid JSON!"
+                            d = json.loads(input_text); custom_route = d.get("route", d); input_text = "JSON Loaded!"
+                        except: input_text = "Invalid!"
                     elif e.key == pygame.K_BACKSPACE: input_text = input_text[:-1]
-                    elif e.key == pygame.K_ESCAPE: input_active = False
-                    elif e.unicode: input_text += e.unicode
+                    else: input_text += e.unicode
                 else:
                     if e.key == pygame.K_SPACE and state == "MENU": start_trigger = True
-                    if e.key == pygame.K_ESCAPE and state == "GAME":
-                        pygame.mixer.music.stop(); state = "MENU"
+                    if e.key == pygame.K_ESCAPE and state == "GAME": pygame.mixer.music.stop(); state = "MENU"
+
+        # --- 2. OYUNCU HAREKETİ (JOYSTICK MANTIĞI) ---
+        if state == "GAME":
+            move_x, move_y = 0, 0
+            # Klavye
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]: move_x = -1
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]: move_x = 1
+            if keys[pygame.K_UP] or keys[pygame.K_w]: move_y = -1
+            if keys[pygame.K_DOWN] or keys[pygame.K_s]: move_y = 1
+            
+            # Mobil Joystick (Eskisi gibi: Merkeze olan uzaklığa göre hız)
+            if is_touching:
+                dx = joy_pos[0] - JOY_CENTER[0]
+                dy = joy_pos[1] - JOY_CENTER[1]
+                dist = math.hypot(dx, dy)
+                if dist > 5: # Ölü bölge
+                    move_x = dx / dist
+                    move_y = dy / dist
+            
+            # Hareket Uygula
+            if move_x != 0 or move_y != 0:
+                player.move(move_x, move_y, dt)
 
         # 2. BAŞLATMA
         if start_trigger:
