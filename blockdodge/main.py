@@ -40,6 +40,7 @@ pressed_keys = []
 pygame.display.set_caption("Blockdodge v1.0")
 input_active = False
 input_text = ""
+BTN_CUSTOM = pygame.Rect(W/2 - 150, H/2 + 150, 300, 50)
 custom_route = None
 # Müzik için mixer.music kullanıyoruz (start_pos desteği için)
 pygame.mixer.music.load("assets/dihblaster.ogg")
@@ -90,22 +91,10 @@ def save_score(song_path, percent):
 
 # Mod Ayarları ve Butonlarını Güncelle (global alan):
 game_mode = "NORMAL" 
-# Mod Ayarları - Mobilde kolay tıklama için boyutları (140, 40) -> (160, 60) yaptık
-# --- GLOBAL ALAN ---
-# JSON Butonu (Daha yukarıda)
-BTN_CUSTOM = pygame.Rect(W/2 - 200, H/2 + 50, 400, 50) 
-
-# Start Butonu (JSON ve Modifierlar arasında)
-BTN_START = pygame.Rect(W/2 - 100, H/2 + 130, 200, 60)
-
-# Modifier Butonları (En altta, yan yana)
-BTN_1HP = pygame.Rect(W/2 - 340, H - 90, 160, 50)
-BTN_ZEN = pygame.Rect(W/2 - 170, H - 90, 160, 50)
-BTN_FAST = pygame.Rect(W/2 + 10,  H - 90, 160, 50)
-BTN_SLOW = pygame.Rect(W/2 + 180, H - 90, 160, 50)
-
-# ESC Butonu (Hitbox'ı büyütelim ki mobilde kolay basılsın)
-BTN_ESC = pygame.Rect(W - 140, 20, 120, 60)
+BTN_1HP = pygame.Rect(W/2 - 310, H - 70, 140, 40)
+BTN_ZEN = pygame.Rect(W/2 - 160, H - 70, 140, 40)
+BTN_FAST = pygame.Rect(W/2 + 10, H - 70, 140, 40)
+BTN_SLOW = pygame.Rect(W/2 + 160, H - 70, 140, 40)
 TOTAL_TIME = mus.get_length()
 hp = 5
 dmgcd = 0
@@ -117,6 +106,9 @@ joy_pos = list(JOY_CENTER)
 is_touching = False
 show_joystick = False 
 touch_id = None
+
+BTN_START = pygame.Rect(W/2 - 100, H - 150, 200, 60)
+BTN_ESC = pygame.Rect(W - 120, 20, 100, 50) # Oyun içi ESC butonu
 
 is_mobile = False
 if IS_WEB:
@@ -136,18 +128,18 @@ SONGS = {
         "slow": "assets/slash_inferno_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/slash_inferno_fast.ogg"  # Hızlandırılmış versiyon
     },
+    "assets/ordih.ogg": {
+        "name": "Animation Warrior Theme - Noxacy Remix (MEDIUM)",
+        "data": "assets/ordih.json",
+        "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
+        "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
+    },
     "assets/dihblaster.ogg": {
         "name": "Sonic Blaster - Noxacy Remix (HARD)",
         "data": "assets/dihblaster.json",
         "slow": "assets/dihblaster_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/dihblaster_fast.ogg"  # Hızlandırılmış versiyon
-    },
-    "assets/ordih.ogg": {
-        "name": "Animation Warrior Theme - Noxacy Remix (EXTREME)",
-        "data": "assets/ordih.json",
-        "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
-        "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
-    },
+    }
 }
 current_song_path = list(SONGS.keys())[0]
 state = "MENU"
@@ -174,27 +166,17 @@ def draw_overlay(title, subtitle, color="#ffffff"):
 
 def draw_menu():
     screen.fill("#050505")
-    # Başlığı biraz daha yukarı alalım
-    cached_draw("BLOCKDODGE v1.0", "#ffffff", (W/2, 100), True)
+    cached_draw("BLOCKDODGE v1.0", "#ffffff", (W/2, H/2 - 180), True)
 
-    current_suffix = get_mode_suffix()
+    current_suffix = get_mode_suffix() # Aktif mod kombinasyonunu al
     
-    # Şarkıları listelerken Y koordinatını 200'den başlatalım
-    start_y = 220 
     for i, (path, info) in enumerate(SONGS.items()):
         is_selected = (path == current_song_path)
+        current_suffix = get_mode_suffix()
         score_key = f"{info['name']}_{current_suffix}"
         display_score = high_scores.get(score_key, 0)
         
-        # Seçili olanı belirgin yap (Sarı renk ve > işareti)
-        color = "#ffff00" if is_selected else "#ffffff"
-        text = f"{'> ' if is_selected else '  '}{info['name']} (Best: %{display_score})"
-        
-        # Her şarkı arasına 60 piksel koy
-        cached_draw(text, color, (W/2, start_y + (i * 60)), True)
-
-    # Mod Butonları Çizimi (Aynı kalabilir)
-    # ...
+        cached_draw(f"{'> ' if is_selected else ''}{info['name']} (Best: %{display_score})", "#ffffff", (W/2, H/2 + (i * 50)), True)
 
     # Butonları Çiz (is_1hp, is_zen ve time_scale'e göre renk değişimi)
     modes = [
@@ -351,6 +333,11 @@ class Block:
                     # (Bu kısım karmaşayı önlemek için basit tutulmuştur)
                 
                 screen.blit(text_surf, text_surf.get_rect(center=sr.center))
+        
+        f_size = int(max(self.size[0], self.size[1]) / 2.5)
+        if f_size not in BLOCK_FONTS:
+            BLOCK_FONTS[f_size] = pygame.font.SysFont(None, f_size)
+        self.font = BLOCK_FONTS[f_size]
 
     def set_col(self):
         r, g, b = self.maincolor
@@ -459,91 +446,101 @@ async def main():
         events = pygame.event.get()
         keys = pygame.key.get_pressed()
         
+        # 1. OLAYLARI YAKALA
         for e in events:
             if e.type == pygame.QUIT: running = False; break
             
-            # Koordinat Yakalama (Fare ve Dokunmatik)
-            mx, my = -1, -1
-            if e.type == pygame.MOUSEBUTTONDOWN:
-                mx, my = e.pos
-            elif e.type == pygame.FINGERDOWN:
-                mx, my = e.x * W, e.y * H
+            # Mobil Dokunmatik İşleme
+            if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP]:
                 is_mobile = True
-            
-            # --- 1. JSON YAZMA MODU (MASAÜSTÜ) ---
-            if input_active and e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_RETURN:
-                    input_active = False
-                    try:
-                        data = json.loads(input_text)
-                        custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
-                        input_text = "JSON Loaded!"
-                    except: 
-                        input_text = "Invalid JSON!"; custom_route = None
-                elif e.key == pygame.K_BACKSPACE: 
-                    input_text = input_text[:-1]
-                elif e.key == pygame.K_ESCAPE:
-                    input_active = False
-                elif e.unicode:
-                    # Sadece CTRL+V değil, normal yazmayı da yakala
-                    input_text += e.unicode
-                continue # Yazı yazarken menü tuşlarını engelle
-
-            # --- 2. OYUN İÇİ ESC / MENÜYE DÖNÜŞ ---
-            if state == "GAME" and mx != -1:
-                if BTN_ESC.collidepoint(mx, my):
-                    pygame.mixer.music.stop(); state = "MENU"; continue
-
-            # --- 3. KLAVYE KONTROLLERİ (MENÜ VE OYUN) ---
-            if e.type == pygame.KEYDOWN:
-                if state == "MENU":
-                    if e.key == pygame.K_SPACE: start_trigger = True
-                elif state == "GAME":
-                    if e.key == pygame.K_ESCAPE:
+                fx, fy = e.x * W, e.y * H
+                
+                if e.type == pygame.FINGERDOWN:
+                    if state == "GAME" and BTN_ESC.collidepoint(fx, fy):
                         pygame.mixer.music.stop(); state = "MENU"
-
-            # --- 4. JOYSTICK KONTROLÜ (DOKUNMATİK) ---
-            if state == "GAME":
-                if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION]:
-                    fx, fy = e.x * W, e.y * H
                     if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
                         is_touching = True
                         touch_id = e.finger_id
+                
+                if e.type == pygame.FINGERMOTION and is_touching and e.finger_id == touch_id:
+                    joy_pos[0], joy_pos[1] = fx, fy
+                
                 if e.type == pygame.FINGERUP and e.finger_id == touch_id:
                     is_touching = False
                     joy_pos = list(JOY_CENTER)
 
-            # --- 5. MENÜ TIKLAMALARI ---
-            if state == "MENU" and mx != -1:
-                menu_start_y = 220
-                # Şarkı Seçimi
-                for i in range(len(SONGS)):
-                    if menu_start_y + (i * 60) - 30 < my < menu_start_y + (i * 60) + 30:
-                        current_song_path = list(SONGS.keys())[i]
-
-                # Mod Butonları
-                if BTN_1HP.collidepoint(mx, my): is_1hp = not is_1hp
-                elif BTN_ZEN.collidepoint(mx, my): is_zen = not is_zen
-                elif BTN_FAST.collidepoint(mx, my): time_scale = 1.2 if time_scale != 1.2 else 1.0
-                elif BTN_SLOW.collidepoint(mx, my): time_scale = 0.75 if time_scale != 0.75 else 1.0
-                
-                # Custom JSON Butonu
-                elif BTN_CUSTOM.collidepoint(mx, my):
-                    if IS_WEB:
-                        paste_data = window.prompt("Paste JSON:")
-                        if paste_data:
+            # JSON Giriş Modu
+            if input_active:
+                if e.type == pygame.KEYDOWN:
+                    mods = pygame.key.get_mods()
+                    # CTRL + V (Windows/Linux) veya CMD + V (Mac)
+                    if e.key == pygame.K_v and (mods & pygame.KMOD_CTRL or mods & pygame.KMOD_META):
+                        if not IS_WEB:
                             try:
-                                data = json.loads(str(paste_data))
-                                custom_route = data["route"] if "route" in data else data
-                                input_text = "JSON Loaded!"
-                            except: input_text = "Invalid!"
+                                import pygame.scrap
+                                # Kaynağı al ve metne çevir
+                                raw_data = pygame.scrap.get(pygame.SCRAP_TEXT)
+                                if raw_data:
+                                    # Byte verisini temizle ve metne ekle
+                                    paste_text = raw_data.decode('utf-8').replace('\x00', '')
+                                    input_text += paste_text
+                            except Exception as ex:
+                                print(f"Paste error: {ex}")
+                        continue # Yapıştırma işleminden sonra diğer tuş kontrollerini atla
+
+                    elif e.key == pygame.K_RETURN:
+                        input_active = False
+                        try:
+                            data = json.loads(input_text)
+                            custom_route = data["route"] if isinstance(data, dict) and "route" in data else data
+                            input_text = "JSON Loaded!"
+                        except: 
+                            input_text = "Invalid JSON!"; custom_route = None
+                    
+                    elif e.key == pygame.K_BACKSPACE: 
+                        input_text = input_text[:-1]
+                    
+                    elif e.unicode and not (mods & pygame.KMOD_CTRL or mods & pygame.KMOD_META):
+                        input_text += e.unicode
+                continue
+
+            if state == "MENU":
+                if e.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
+                    if e.type == pygame.MOUSEBUTTONDOWN:
+                        pos = e.pos
                     else:
-                        input_active = True
-                        input_text = "" # Yazmaya hazırla
-                
-                # Start Butonu
-                elif BTN_START.collidepoint(mx, my):
-                    start_trigger = True
+                        pos = (e.x * W, e.y * H)
+
+                    # Mod Butonları Kontrolü
+                    if BTN_1HP.collidepoint(pos): is_1hp = not is_1hp
+                    elif BTN_ZEN.collidepoint(pos): is_zen = not is_zen
+                    elif BTN_FAST.collidepoint(pos): 
+                        time_scale = 1.25 if time_scale != 1.25 else 1.0
+                    elif BTN_SLOW.collidepoint(pos): 
+                        time_scale = 0.75 if time_scale != 0.75 else 1.0
+                    
+                    # Şarkı Seçimi Kontrolü
+                    for i in range(len(SONGS)):
+                        # Tıklanan yer şarkı listesi hizasındaysa seç
+                        if H/2 + (i * 50) - 25 < pos[1] < H/2 + (i * 50) + 25:
+                            current_song_path = list(SONGS.keys())[i]
+                    
+                    if BTN_CUSTOM.collidepoint(pos):
+                        if IS_WEB:
+                            paste_data = window.prompt("Paste JSON:")
+                            if paste_data:
+                                try:
+                                    data = json.loads(str(paste_data))
+                                    custom_route = data["route"]; input_text = "JSON Loaded!"
+                                except: input_text = "Invalid!"
+                        else: input_active = True; input_text = ""
+                    elif BTN_START.collidepoint(pos): 
+                        start_trigger = True
+                if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE: start_trigger = True
+
+            elif state == "GAME":
+                if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
+                    pygame.mixer.music.stop(); state = "MENU"
 
         # 2. BAŞLATMA
         if start_trigger:
