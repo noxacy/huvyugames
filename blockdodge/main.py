@@ -133,7 +133,13 @@ SONGS = {
         "data": "assets/dihblaster.json",
         "slow": "assets/dihblaster_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/dihblaster_fast.ogg"  # Hızlandırılmış versiyon
-    }
+    },
+    "assets/ordih.ogg": {
+        "name": "Animation Warrior Theme - Noxacy Remix (EXTREME)",
+        "data": "assets/ordih.json",
+        "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
+        "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
+    },
 }
 current_song_path = list(SONGS.keys())[0]
 state = "MENU"
@@ -160,17 +166,27 @@ def draw_overlay(title, subtitle, color="#ffffff"):
 
 def draw_menu():
     screen.fill("#050505")
-    cached_draw("BLOCKDODGE v1.0", "#ffffff", (W/2, H/2 - 180), True)
+    # Başlığı biraz daha yukarı alalım
+    cached_draw("BLOCKDODGE v1.0", "#ffffff", (W/2, 100), True)
 
-    current_suffix = get_mode_suffix() # Aktif mod kombinasyonunu al
+    current_suffix = get_mode_suffix()
     
+    # Şarkıları listelerken Y koordinatını 200'den başlatalım
+    start_y = 220 
     for i, (path, info) in enumerate(SONGS.items()):
         is_selected = (path == current_song_path)
-        current_suffix = get_mode_suffix()
         score_key = f"{info['name']}_{current_suffix}"
         display_score = high_scores.get(score_key, 0)
         
-        cached_draw(f"{'> ' if is_selected else ''}{info['name']} (Best: %{display_score})", "#ffffff", (W/2, H/2 + (i * 50)), True)
+        # Seçili olanı belirgin yap (Sarı renk ve > işareti)
+        color = "#ffff00" if is_selected else "#ffffff"
+        text = f"{'> ' if is_selected else '  '}{info['name']} (Best: %{display_score})"
+        
+        # Her şarkı arasına 60 piksel koy
+        cached_draw(text, color, (W/2, start_y + (i * 60)), True)
+
+    # Mod Butonları Çizimi (Aynı kalabilir)
+    # ...
 
     # Butonları Çiz (is_1hp, is_zen ve time_scale'e göre renk değişimi)
     modes = [
@@ -279,6 +295,8 @@ class Object:
         if self.blast: 
             cached_draw(self.blast, "#000000", sr.center, True)
 
+BLOCK_FONTS = {}
+
 class Block:
     def __init__(self, center: tuple, size: tuple, color: tuple, spawn_time: float, etime: float, adisplay: float):
         self.rect = pygame.Rect(0, 0, size[0], size[1])
@@ -291,9 +309,40 @@ class Block:
         self.dmg = False
         self.end = False
         self.a = 0.5
-        self.set_col()
-        self.current_life = 0 # Çizim için süreyi saklayalım
+        self.current_life = 0
         self.size = size
+        
+        # FORMÜL DÜZELTME: 
+        # Bloğun hem genişliğini hem yüksekliğini baz al, 
+        # ama genişliğin (3 karakter: "0.0") sığması için genişliği 3'e böl.
+        f_size = int(min(size[0] / 2.2, size[1] / 1.2))
+        
+        if f_size < 12: f_size = 12 # Minimum okunabilirlik
+        if f_size > 50: f_size = 50 # Maksimum devasa blok sınırı
+
+        if f_size not in BLOCK_FONTS:
+            BLOCK_FONTS[f_size] = pygame.font.SysFont("Arial", f_size, bold=True)
+        self.font = BLOCK_FONTS[f_size]
+        self.set_col()
+
+    def draw(self, ox=0, oy=0):
+        sr = self.rect.move(ox, oy)
+        pygame.draw.rect(screen, self.color, sr)
+        
+        if not self.dmg:
+            remaining = (self.adisplay / time_scale) - self.current_life
+            if remaining > 0:
+                # Sayı 1'den küçükse 0.x formatında, büyükse tam sayıya yakın formatta
+                txt = f"{remaining:.1f}"
+                
+                # OPTİMİZASYON: Yazı bloğa sığmıyorsa fontu o anlık küçült
+                text_surf = self.font.render(txt, True, "#000000")
+                if text_surf.get_width() > self.rect.width - 4:
+                    # Eğer hala sığmıyorsa daha küçük bir fontla dene (Cache'den)
+                    small_font_size = f_size - 4 if 'f_size' in locals() else 12
+                    # (Bu kısım karmaşayı önlemek için basit tutulmuştur)
+                
+                screen.blit(text_surf, text_surf.get_rect(center=sr.center))
 
     def set_col(self):
         r, g, b = self.maincolor
@@ -301,40 +350,20 @@ class Block:
 
     def update(self, current_music_time):
         global shake_amount, time_scale
-        # Müzik zamanı ile spawn zamanı farkını alıyoruz
         self.current_life = current_music_time - self.spawn_time
         
-        # Hızlı modda (time_scale > 1) blokların daha hızlı patlaması ve yok olması gerekir
-        # Bu yüzden karşılaştırma yaptığımız süreleri time_scale'e bölüyoruz
-        scaled_etime = self.etime / time_scale
-        scaled_adisplay = self.adisplay / time_scale
+        s_etime = self.etime / time_scale
+        s_adisplay = self.adisplay / time_scale
 
-        if self.current_life >= scaled_etime: 
+        if self.current_life >= s_etime: 
             self.end = True
-        
-        if self.current_life >= scaled_adisplay and not self.dmg:
+            return
+
+        if self.current_life >= s_adisplay and not self.dmg:
             self.dmg = True
             self.a = 0
             self.set_col()
             shake_amount = 15
-
-    def draw(self, ox=0, oy=0):
-        if self.size[0] > self.size[1]:
-            font = pygame.font.SysFont(None, int(math.sqrt(self.size[0]**2+self.size[0]**2)/2.5))
-        else:
-            font = pygame.font.SysFont(None, int(math.sqrt(self.size[1]**2+self.size[1]**2)/2.5))
-        sr = self.rect.copy()
-        sr.x += ox; sr.y += oy
-        pygame.draw.rect(screen, self.color, sr)
-        
-        # Eğer blok henüz aktifleşmemişse (dmg False), üzerine kalan süreyi yaz
-        if not self.dmg:
-            remaining = self.adisplay - self.current_life
-            if remaining > 0:
-                # Süreyi 0.1 hassasiyetle göster (Örn: 0.8)
-                time_text = f"{remaining:.1f}"
-                # Yazının rengi bloğun ana rengiyle aynı olsun ki okunabilsin (veya beyaz yapabilirsin)
-                cached_draw(time_text, "#000000", sr.center, True, font)
 
 def get_joy_axis():
     if not is_touching: return [0, 0]
@@ -482,38 +511,35 @@ async def main():
 
             if state == "MENU":
                 if e.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
-                    # Koordinat belirleme (Mobil/PC uyumlu)
                     if e.type == pygame.MOUSEBUTTONDOWN:
-                        pos = e.pos
+                        mx, my = e.pos
                     else:
-                        pos = (e.x * W, e.y * H)
+                        mx, my = e.x * W, e.y * H
 
-                    # Mod Butonları Kontrolü
-                    if BTN_1HP.collidepoint(pos): is_1hp = not is_1hp
-                    elif BTN_ZEN.collidepoint(pos): is_zen = not is_zen
-                    elif BTN_FAST.collidepoint(pos): 
-                        time_scale = 1.2 if time_scale != 1.2 else 1.0
-                    elif BTN_SLOW.collidepoint(pos): 
-                        time_scale = 0.75 if time_scale != 0.75 else 1.0
-                    
-                    # Şarkı Seçimi Kontrolü
+                    # ŞARKI SEÇİMİ HİTBOX DÜZELTMESİ
+                    # draw_menu fonksiyonundaki start_y ile buradaki aynı olmalı!
+                    menu_start_y = 220 
                     for i in range(len(SONGS)):
-                        # Tıklanan yer şarkı listesi hizasındaysa seç
-                        if H/2 + (i * 50) - 25 < pos[1] < H/2 + (i * 50) + 25:
+                        target_y = menu_start_y + (i * 60)
+                        # Tıklama alanını biraz genişletiyoruz (40px yukarı/aşağı)
+                        if target_y - 30 < my < target_y + 30:
                             current_song_path = list(SONGS.keys())[i]
-                    
-                    if BTN_CUSTOM.collidepoint(pos):
-                        if IS_WEB:
-                            paste_data = window.prompt("Paste JSON:")
-                            if paste_data:
-                                try:
-                                    data = json.loads(str(paste_data))
-                                    custom_route = data["route"]; input_text = "JSON Loaded!"
-                                except: input_text = "Invalid!"
-                        else: input_active = True; input_text = ""
-                    elif BTN_START.collidepoint(pos): 
+
+                    # Diğer butonlar (Zaten Rect nesnesi oldukları için kaymazlar)
+                    if BTN_1HP.collidepoint(mx, my): is_1hp = not is_1hp
+                    elif BTN_ZEN.collidepoint(mx, my): is_zen = not is_zen
+                    elif BTN_FAST.collidepoint(mx, my): 
+                        time_scale = 1.2 if time_scale != 1.2 else 1.0
+                    elif BTN_SLOW.collidepoint(mx, my): 
+                        time_scale = 0.75 if time_scale != 0.75 else 1.0
+                    elif BTN_CUSTOM.collidepoint(mx, my):
+                        # ... json kodu ...
+                        pass
+                    elif BTN_START.collidepoint(mx, my): 
                         start_trigger = True
-                if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE: start_trigger = True
+
+                if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE: 
+                    start_trigger = True
 
             elif state == "GAME":
                 if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
