@@ -445,15 +445,10 @@ async def main():
     start_trigger = False 
     touch_id = None
 
-    if not IS_WEB:
-        try:
-            import pygame.scrap
-            pygame.scrap.init()
-        except Exception as e:
-            print(f"Clipboard init error: {e}")
-# main() içinde, while döngüsünden önce şu yardımcı fonksiyonu ekle (veya mantığı içine göm)
+    # --- TIKLAMA MANTIĞINI BURADA TANIMLIYORUZ (HATA ALMAMAK İÇİN) ---
     def handle_menu_click(mx, my):
-        global current_song_path, is_1hp, is_zen, time_scale, input_active, input_text, start_trigger, custom_route
+        nonlocal start_trigger
+        global current_song_path, is_1hp, is_zen, time_scale, input_active, input_text, custom_route
         
         # Şarkı Seçimi
         menu_start_y = 220
@@ -473,44 +468,39 @@ async def main():
                 paste_data = window.prompt("Paste JSON:")
                 if paste_data:
                     try:
-                        data = json.loads(str(paste_data)); custom_route = data.get("route", data); input_text = "JSON Loaded!"
+                        data = json.loads(str(paste_data))
+                        custom_route = data.get("route", data); input_text = "JSON Loaded!"
                     except: input_text = "Invalid!"
-            else: input_active = True; input_text = ""
+            else: 
+                input_active = True
+                input_text = ""
         
         # Start Butonu
         elif BTN_START.collidepoint(mx, my):
-            nonlocal start_trigger # main içindeyse
             start_trigger = True
+
+    # --- ANA DÖNGÜ ---
     while running:
         raw_ms = clock.tick(60) 
         dt = (raw_ms / 1000.0) * time_scale
-        
         events = pygame.event.get()
         keys = pygame.key.get_pressed()
-        
-        
+
         for e in events:
             if e.type == pygame.QUIT: running = False; break
             
-            # --- 1. MOBİL / DOKUNMATİK KOORDİNAT SİSTEMİ (JOYSTICK İÇİN) ---
+            # 1. MOBİL / DOKUNMATİK
             if e.type in [pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP]:
-                is_mobile = True
                 fx, fy = e.x * W, e.y * H
-                
                 if e.type == pygame.FINGERDOWN:
-                    # Oyun içindeysen joystick kontrolü
                     if state == "GAME":
-                        if math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
-                            is_touching = True
-                            touch_id = e.finger_id
-                        # ESC Butonu kontrolü (Dokunmatik için ayrı)
                         if BTN_ESC.collidepoint(fx, fy):
                             pygame.mixer.music.stop(); state = "MENU"
-                    
-                    # Menüdeysen tıklama koordinatlarını ayarla
+                        elif math.hypot(fx - JOY_CENTER[0], fy - JOY_CENTER[1]) < JOY_RADIUS * 1.5:
+                            is_touching = True
+                            touch_id = e.finger_id
                     elif state == "MENU":
-                        # Dokunmatik koordinatlarını normal tıklama gibi işle
-                        self.handle_menu_click(fx, fy) 
+                        handle_menu_click(fx, fy)
 
                 if e.type == pygame.FINGERMOTION and is_touching and e.finger_id == touch_id:
                     joy_pos[0], joy_pos[1] = fx, fy
@@ -519,17 +509,16 @@ async def main():
                     is_touching = False
                     joy_pos = list(JOY_CENTER)
 
-            # --- 2. MOUSE TIKLAMALARI (MASAÜSTÜ) ---
-            if e.type == pygame.MOUSEBUTTONDOWN:
+            # 2. MOUSE (MASAÜSTÜ)
+            elif e.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = e.pos
                 if state == "GAME" and BTN_ESC.collidepoint(mx, my):
                     pygame.mixer.music.stop(); state = "MENU"
                 elif state == "MENU":
-                    # Menü fonksiyonunu çağır (Aşağıda tanımladık)
-                    self.handle_menu_click(mx, my)
+                    handle_menu_click(mx, my)
 
-            # --- 3. KLAVYE (JSON VE MENÜ TUŞLARI) ---
-            if e.type == pygame.KEYDOWN:
+            # 3. KLAVYE
+            elif e.type == pygame.KEYDOWN:
                 if input_active:
                     if e.key == pygame.K_RETURN:
                         input_active = False
@@ -545,6 +534,8 @@ async def main():
                     if e.key == pygame.K_SPACE and state == "MENU": start_trigger = True
                     if e.key == pygame.K_ESCAPE and state == "GAME":
                         pygame.mixer.music.stop(); state = "MENU"
+
+        # (Buradan aşağısı orijinal başlatma ve oyun mantığı kodlarınla devam ediyor...)
 
         # 2. BAŞLATMA
         if start_trigger:
