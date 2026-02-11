@@ -128,17 +128,17 @@ SONGS = {
         "slow": "assets/slash_inferno_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/slash_inferno_fast.ogg"  # Hızlandırılmış versiyon
     },
-    "assets/ordih.ogg": {
-        "name": "Animation Warrior Theme - Noxacy Remix (MEDIUM)",
-        "data": "assets/ordih.json",
-        "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
-        "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
-    },
     "assets/dihblaster.ogg": {
         "name": "Sonic Blaster - Noxacy Remix (HARD)",
         "data": "assets/dihblaster.json",
         "slow": "assets/dihblaster_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/dihblaster_fast.ogg"  # Hızlandırılmış versiyon
+    },
+    "assets/ordih.ogg": {
+        "name": "Animation Warrior Theme - Noxacy Remix (INSANITY)",
+        "data": "assets/ordih.json",
+        "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
+        "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
     }
 }
 current_song_path = list(SONGS.keys())[0]
@@ -561,6 +561,7 @@ async def main():
                 TOTAL_TIME = pygame.mixer.Sound(p).get_length()
 
             spawn_times = [0]
+            dmgcd = 0
             curr = 0
             for d in route:
                 curr += d["duration"] / time_scale
