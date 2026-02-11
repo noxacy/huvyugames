@@ -26,6 +26,7 @@ if IS_WEB:
 high_scores = {}
 if os.path.exists("scores.json"):
     with open("scores.json", "r") as f: high_scores = json.load(f)
+OG_SKIP_TIME = 0
 SKIP_TIME = 0
 shake_amount = 0
 
@@ -520,7 +521,7 @@ async def main():
                         elif BTN_FAST.collidepoint(pos):
                             time_scale = 1.25 if time_scale != 1.25 else 1.0
                         elif BTN_SLOW.collidepoint(pos):
-                            time_scale = 0.75 if time_scale != 0.75 else 1.0
+                            time_scale = 0.75 if time_scale != 0.75 else 1.0,
 
                     # Şarkı Seçimi Kontrolü
                     for i in range(len(SONGS)):
@@ -548,6 +549,7 @@ async def main():
         # 2. BAŞLATMA
         if start_trigger:
             state = "GAME"
+            SKIP_TIME = OG_SKIP_TIME / time_scale
             objects = []
             route_index = 0
             # ... (Müzik yükleme kısmı kodunda olduğu gibi kalsın) ...
