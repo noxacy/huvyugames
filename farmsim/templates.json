@@ -1,0 +1,38 @@
+{
+    "plants": 
+    {
+        "turnip": 
+        {
+            "name": "Turnip",
+            "cost": 30,
+            "sell_c": 40,
+            "id": 0,
+            "stock": 10,
+            "rarity": 0.9,
+            "phases": {
+                "phase0":  {"grow": 0},
+                "phase1": {"grow": 10},
+                "phase2": {"grow": 20},
+                "phase3": {"grow": 15},
+                "phase4": {"grow": 20},
+                "phase5": {"grow": 30}
+            }
+        },
+        "rose": 
+        {
+            "name": "Rose",
+            "cost": 50,
+            "sell_c": 70,
+            "id": 0,
+            "rarity": 0.6,
+            "phases": {
+                "phase0":  {"grow": 0},
+                "phase1": {"grow": 30},
+                "phase2": {"grow": 40},
+                "phase3": {"grow": 35},
+                "phase4": {"grow": 30},
+                "phase5": {"grow": 50}
+            }
+        }
+    }
+}
