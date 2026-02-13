@@ -20,8 +20,6 @@ class Game:
         with open("templates.json", "r")as file:
             f = json.load(file)
             self.plants = f["plants"]
-            print(self.plants)
-            self.stock = [i.get("stock", 0) for i in self.plants]
         self.plant = self.plants["turnip"]
 
 game = Game()
@@ -84,6 +82,8 @@ class Text:
         else:
             screen.blit(self.text, self.rect)
 
+
+
 class Farm:
     def __init__(self, x, y, size, color):
         self.x = x
@@ -122,7 +122,7 @@ class Farm:
             self.watered = True
             self.watertime = 15
         elif self.plant is None and game.mode == "plant":
-            if game.plant["price"] >= game.money:
+            if game.plant["cost"] >= game.money:
                 self.plant = game.plant
                 game.money -= game.plant["price"]
                 self.durs = self.plant["durations"]

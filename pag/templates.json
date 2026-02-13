@@ -23,7 +23,7 @@
             "name": "Rose",
             "cost": 50,
             "sell_c": 70,
-            "id": 0,
+            "id": 1,
             "rarity": 0.6,
             "phases": {
                 "phase0":  {"grow": 0},
