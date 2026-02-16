@@ -62,19 +62,6 @@ PALETTE_PADDING = 8
 
 pygame.init()
 pygame.mixer.init()
-
-coin_s = dash_s = key_s = die_s = None
-
-def load_sounds():
-    global coin_s, dash_s, key_s, die_s
-    if IS_WEB:
-        return
-    coin_s = pygame.mixer.Sound("assets/coin.ogg")
-    dash_s = pygame.mixer.Sound("assets/dash.ogg")
-    key_s = pygame.mixer.Sound("assets/key.ogg")
-    die_s = pygame.mixer.Sound("assets/die.ogg")
-
-load_sounds()
 try:
     SCREEN = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     INFO = pygame.display.Info()
@@ -1531,7 +1518,7 @@ class Player:
                 die_s.play()
                 return "death"
             if tid == 9:
-                self.vyh += -550
+                self.vy += -550
 
             if tid == KEY_TILE_ID:
                 collected = collect_key_at_cell(gx, gy)
@@ -1697,6 +1684,17 @@ performance = bool(settings.get("performance", True))
 running = True
 async def main():
     global camx, camy, editor, shake_time, particles, debug, selected_tile, running
+    global coin_s, dash_s, key_s, die_s
+
+    try:
+        pygame.mixer.init()
+        coin_s = pygame.mixer.Sound("assets/coin.ogg")
+        dash_s = pygame.mixer.Sound("assets/dash.ogg")
+        key_s = pygame.mixer.Sound("assets/key.ogg")
+        die_s = pygame.mixer.Sound("assets/die.ogg")
+    except:
+        coin_s = dash_s = key_s = die_s = None
+
     while running:
         SCREEN.blit(NEWBG, (0, 0))
         if performance:
