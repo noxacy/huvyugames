@@ -10,7 +10,7 @@ DATA_FILE = "data.json"
 TURN_DATA_PATH = "turn_data.json"
 DOORS_FILE = "doors.json"
 KEYS_PATH = "keys.json"
-
+coin_s, die_s, dash_s = None, None, None
 DEFAULT_WINDOW_W = 1280
 DEFAULT_WINDOW_H = 720
 
