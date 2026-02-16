@@ -23,7 +23,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pygbag --upgrade
           python -m pip install numpy
-          python -m pip install hashlib
           python -m pip install dataclasses
           python -m pip install typing
 
