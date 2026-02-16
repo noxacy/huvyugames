@@ -1,4 +1,5 @@
 from __future__ import annotations
+IS_WEB = sys.platform == "emscripten"
 
 import json, pygame, math, os, random, sys, hashlib, asyncio
 import numpy as np
@@ -62,11 +63,18 @@ PALETTE_PADDING = 8
 pygame.init()
 pygame.mixer.init()
 
-coin_s = pygame.mixer.Sound(os.path.join("assets", "coin.ogg"))
-dash_s = pygame.mixer.Sound(os.path.join("assets", "dash.ogg"))
-key_s = pygame.mixer.Sound(os.path.join("assets", "key.ogg"))
-die_s = pygame.mixer.Sound(os.path.join("assets", "die.ogg"))
+coin_s = dash_s = key_s = die_s = None
 
+def load_sounds():
+    global coin_s, dash_s, key_s, die_s
+    if IS_WEB:
+        return
+    coin_s = pygame.mixer.Sound("assets/coin.ogg")
+    dash_s = pygame.mixer.Sound("assets/dash.ogg")
+    key_s = pygame.mixer.Sound("assets/key.ogg")
+    die_s = pygame.mixer.Sound("assets/die.ogg")
+
+load_sounds()
 try:
     SCREEN = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     INFO = pygame.display.Info()
@@ -122,23 +130,32 @@ def clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
 def load_json_or_default(path: str, default):
+    if IS_WEB:
+        return default
+
     if not os.path.exists(path):
         return default
+
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception as e:
+    except:
         return default
 
+
 def safe_write_json(path: str, data) -> bool:
+    if IS_WEB:
+        return False
+
     try:
         tmp = path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         os.replace(tmp, path)
         return True
-    except Exception as e:
+    except:
         return False
+
 
 def load_turn_data() -> Tuple[Dict[int, int], Dict[Tuple[int, int], int]]:
     per = {}
@@ -2019,7 +2036,10 @@ async def main():
                 SCREEN.blit(text_surf, (px, py + palette_tile_px + 2))
 
         pygame.display.flip()
+        await asyncio.sleep(0)
+
 
     pygame.quit()
     sys.exit()
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
