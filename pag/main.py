@@ -1,6 +1,6 @@
 import pygame, asyncio, json
 pygame.init()
-W, H = 1280, 720
+W, H = 1920, 1080
 screen = pygame.display.set_mode((W, H))
 CLOCK = pygame.time.Clock()
 font1 = pygame.font.Font(None, 40)
