@@ -2,7 +2,7 @@ name: Deploy Pygame to GitHub Pages
 
 on:
   push:
-    branches: [ main ]  # Runs every time you push to main
+    branches: [ main ]
 
 permissions:
   contents: write
@@ -10,24 +10,28 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    steps: 
+
+    steps:
       - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pygbag==0.9.3
-          python -m pip install numpy
-          python -m pip install dataclasses
-          python -m pip install typing
+          python -m pip install pygbag==0.9.3 numpy
 
-      - name: Build and patch games
+      - name: Build games
         run: |
+          rm -rf deploy
+          mkdir -p deploy
+
+          # Root site dosyaları
+          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ || true
+
           for dir in */; do
             dirname=${dir%/}
 
@@ -36,35 +40,30 @@ jobs:
             fi
 
             if [ -f "$dirname/main.py" ]; then
-              echo "Building game in folder: $dirname"
+              echo "Building game: $dirname"
 
               python -m pygbag --build "$dirname/"
 
               mkdir -p "deploy/$dirname"
               cp -r "$dirname/build/web/"* "deploy/$dirname/"
 
-              shopt -s nullglob
-              for HTML in deploy/$dirname/*.html; do
-                echo "Patching $HTML"
-
-                # DOCTYPE fix
-                sed -i '1{/^<!DOCTYPE html>/!s/^/<!DOCTYPE html>\n/}' "$HTML"
-
-                # navigator.userAgentData FIX (HEAD içine)
-                sed -i '/<head>/a <script>if(!navigator.userAgentData){navigator.userAgentData={mobile:false};}</script>' "$HTML"
-              done
-              shopt -u nullglob
-
+              # Oyun assetleri
               cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.jpg "deploy/$dirname/" 2>/dev/null || true
+
+              # extra html sayfaları
+              if [ -f "$dirname/${dirname}_play.html" ]; then
+                cp "$dirname/${dirname}_play.html" "deploy/$dirname/"
+              fi
+
+              if [ -f "$dirname/${dirname}_guide.html" ]; then
+                cp "$dirname/${dirname}_guide.html" "deploy/$dirname/"
+              fi
             fi
           done
-
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: deploy
           branch: gh-pages
-
-          
