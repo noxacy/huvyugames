@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huvyu Games</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3553688527206955" crossorigin="anonymous"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0f1015;
+            --card-bg: #1b1c22;
+            --accent-color: #2a68ae;
+            --text-main: #ffffff;
+            --text-dim: #a1a1a1;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 40px; letter-spacing: -1px; }
+
+        .arcade-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+            /* Ortak Kart Efektleri (Hover ve Parlama) */
+        .game-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #333;
+        }
+
+        /* Üzerine gelince kartın parlaması ve büyümesi */
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 10px 30px rgba(122, 47, 255, 0.3);
+            border-color: #ffffff;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.5s ease;
+        }
+
+        /* Resmin hafif büyüme efekti */
+        .game-card:hover .thumbnail img {
+            transform: scale(1.1);
+        }
+
+        /* Badge parlaması */
+        .badge {
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .thumbnail {
+            width: 100%;
+            /* This ensures the image takes up the top space and the info stays below it */
+            flex-grow: 1; 
+            background-color: #222;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            /* 'contain' ensures the WHOLE image is seen without cropping. 
+            'cover' fills the space but might crop edges. */
+            object-fit: contain; 
+        }
+
+        .game-info {
+            padding: 12px;
+            background: var(--card-bg); /* Match card color */
+            position: relative; /* Change from absolute to relative */
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 3;
+            border-top: 1px solid #333; /* Slight separator */
+        }
+
+        .game-info h3 { margin: 0; font-size: 1.1rem; }
+        .game-info p { margin: 4px 0 0; font-size: 0.85rem; color: var(--text-dim); }
+
+        .badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--accent-color);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Huvyu Games</h1>
+    <div class="arcade-container">
+        <a href="aclicker/aclicker_play.html" class="game-card" style="box-shadow: inset 0 0 20px rgba(42, 104, 174, 0.1);">
+            <div class="thumbnail">
+                <img src="aclicker/thumbnail.png" style="padding: 15px;">
+            </div>
+            <div class="game-info">
+                <h3 style="color: #7A2FFF;">Akif Clicker</h3>
+                <p>Incremental • Clicker</p>
+            </div>
+        </a>
+
+        <a href="td/td_play.html" class="game-card" style="box-shadow: inset 0 0 20px rgba(214, 120, 19, 0.1);">
+            <div class="thumbnail">
+                <img src="td/thumbnail.png" style="padding: 5px;">
+            </div>
+            <div class="game-info">
+                <h3 style="color: #ff9d00;">Tower Defense</h3>
+                <p>Strategy • Action</p>
+            </div>
+        </a>
+        <a href="blockdodge/blockdodge_play.html" class="game-card" style="box-shadow: inset 0 0 20px rgba(214, 120, 19, 0.1);">
+            <div class="badge" style="background-color: #ff0000;">New</div>
+            <div class="thumbnail">
+                <img src="blockdodge/thumbnail.png" style="padding: 5px;">
+            </div>
+            <div class="game-info">
+                <h3 style="color: #ff0000;">Blockdodge</h3>
+                <p>Rhytm • Reflex • Skill</p>
+            </div>
+        </a>
+        <a href="pag/pag_play.html" class="game-card" style="box-shadow: inset 0 0 20px rgba(214, 120, 19, 0.1);">
+            <div class="badge" style="background-color: #eaff00;">New</div>
+            <div class="thumbnail">
+                <img src="pag/thumbnail.png" style="padding: 5px;">
+            </div>
+            <div class="game-info">
+                <h3 style="color: #ffe600;">Plant & Grow</h3>
+                <p>Chill • Simulator</p>
+            </div>
+        </a>
+        <a href="projectx/projectx_play.html" class="game-card" style="box-shadow: inset 0 0 20px rgba(214, 120, 19, 0.1);">
+            <div class="badge" style="background-color: #eaff00;">New</div>
+            <div class="thumbnail">
+                <img src="projectx/thumbnail.png" style="padding: 5px;">
+            </div>
+            <div class="game-info">
+                <h3 style="color: #1aff00;">Project X</h3>
+                <p>Platformer • Skill</p>
+            </div>
+        </a>
+
+        <a href="#" class="game-card" style="opacity: 0.4; cursor: default; filter: grayscale(1);">
+            <div class="thumbnail"><img src="cs.png"></div>
+            <div class="game-info">
+                <h3>Next Project</h3>
+                <p>Coming Soon</p>
+            </div>
+        </a>
+    </div>
+
+<footer style="margin-top: 50px; padding: 20px; text-align: center; border-top: 1px solid #1b1c22; width: 100%;">
+    <p style="color: #666; font-size: 0.8rem;">
+        &copy; 2026 Huvyu Games | 
+        <a href="about.html" style="color: #666; text-decoration: none;">About Us</a> |
+        <a href="contact.html" style="color: #666; text-decoration: none;">Contact Us</a> |
+        <a href="privacy.html" style="color: #666; text-decoration: none;">Privacy Policy</a> | 
+        <a href="terms.html" style="color: #666; text-decoration: none;">Terms of Service</a>
+    </p>
+</footer>
+
+</body>
+</html>
