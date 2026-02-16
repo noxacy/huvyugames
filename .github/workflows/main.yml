@@ -46,7 +46,7 @@ jobs:
               mkdir -p "deploy/$dirname"
               cp -r "$dirname/build/web/"* "deploy/$dirname/"
 
-              sed -i '1i <!DOCTYPE html>' "$dirname/build/web/index.html"
+              sed -i '/<head>/a <script>if(!navigator.userAgentData){navigator.userAgentData={mobile:false};}</script>' "$HTML"
               
               # --- THE FIX STARTS HERE ---
               # Copy the thumbnail and any other images from the game folder
