@@ -1,10 +1,9 @@
 from __future__ import annotations
-IS_WEB = sys.platform == "emscripten"
-
 import json, pygame, math, os, random, sys, hashlib, asyncio
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple, Any
+IS_WEB = sys.platform == "emscripten"
 
 FPS_TARGET = 144
 DATA_FILE = "data.json"
@@ -61,14 +60,19 @@ PALETTE_COLS = 6
 PALETTE_PADDING = 8
 
 pygame.init()
-pygame.mixer.init()
-try:
-    SCREEN = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-    INFO = pygame.display.Info()
-    W, H = INFO.current_w, INFO.current_h
-except pygame.error:
+
+
+if IS_WEB:
     W, H = DEFAULT_WINDOW_W, DEFAULT_WINDOW_H
     SCREEN = pygame.display.set_mode((W, H))
+else:
+    try:
+        SCREEN = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        INFO = pygame.display.Info()
+        W, H = INFO.current_w, INFO.current_h
+    except pygame.error:
+        W, H = DEFAULT_WINDOW_W, DEFAULT_WINDOW_H
+        SCREEN = pygame.display.set_mode((W, H))
 
 clock = pygame.time.Clock()
 ZOOM = 2.0
@@ -889,7 +893,9 @@ def collect_key_at_cell(gx: int, gy: int) -> bool:
             grid.set_tile(gx, gy, 0)
             cx, cy = gx * TILE + TILE // 2, gy * TILE + TILE // 2
             emit_particles(cx, cy, 40, speed_spread=80, life_spread=1.2, color=(200, 200, 80), radius_range=(2, 5))
-            key_s.play()
+            if key_s:
+                key_s.play()
+
             return opened_any
 
     return False
@@ -1193,7 +1199,9 @@ def collect_key_at_cell(gx: int, gy: int) -> bool:
             grid.set_tile(gx, gy, 0)
             cx, cy = gx * TILE + TILE // 2, gy * TILE + TILE // 2
             emit_particles(cx, cy, 40, speed_spread=80, life_spread=1.2, color=(200, 200, 80), radius_range=(2, 5))
-            key_s.play()
+            if key_s:
+                key_s.play()
+
             return opened_any
 
     return False
@@ -1261,7 +1269,8 @@ class Player:
             self.last_dash = DASH_COOLDOWN
             self.vy -= 80
             emit_particles(self.rect.centerx, self.rect.bottom - 4, DASH_PARTICLES, speed_spread=80, life_spread=1.0, color=(255, 220, 120), radius_range=(2, 4))
-            dash_s.play()
+            if dash_s:
+                dash_s.play()
 
     def toggle_mini_mode(self, mini_img: Optional[pygame.Surface] = None):
         if not self.mini_mode:
@@ -1507,15 +1516,18 @@ class Player:
                 custom_hitbox = get_tile_hitbox_rect(tid, gx, gy, grid.tile)
                 if custom_hitbox and self.rect.colliderect(custom_hitbox):
                     if tid in (86, 88):
-                        die_s.play()
+                        if die_s:
+                            die_s.play()
                         return "death"
                     elif tid == 83:
                         on_chain = True
             elif self.y <= 0 or self.y >= grid.rows * grid.tile:
-                die_s.play()
+                if die_s:
+                    die_s.play()
                 return "death"
             elif tid in DEADLY_TILES:
-                die_s.play()
+                if die_s:
+                    die_s.play()
                 return "death"
             if tid == 9:
                 self.vy += -550
@@ -1669,7 +1681,7 @@ except Exception:
 NEWBG = change_brightness(BG, -100)
 
 factory = pygame.image.load("assets/p1.png").convert_alpha()
-factory = pygame.transform.scale(factory, (W/2, H/2))
+factory = pygame.transform.scale(factory, (int(W/2), int(H/2)))
 factory = change_brightness(factory, -30)
 factoryback = pygame.image.load("assets/p2.png").convert_alpha()
 factoryback = pygame.transform.scale(factoryback, (W, H))
@@ -1682,18 +1694,44 @@ sync_key_door_objects()
 settings = load_json_or_default("settings.json", {})
 performance = bool(settings.get("performance", True))
 running = True
+def safe_input(prompt, default=None):
+    if IS_WEB:
+        return default
+    try:
+        return input(prompt)
+    except:
+        return default
+
 async def main():
     global camx, camy, editor, shake_time, particles, debug, selected_tile, running
     global coin_s, dash_s, key_s, die_s
 
+
+    if not IS_WEB:
+        try:
+            pygame.mixer.init()
+        except:
+            pass
+
     try:
-        pygame.mixer.init()
         coin_s = pygame.mixer.Sound("assets/coin.ogg")
+    except:
+        coin_s = None
+
+    try:
         dash_s = pygame.mixer.Sound("assets/dash.ogg")
+    except:
+        dash_s = None
+
+    try:
         key_s = pygame.mixer.Sound("assets/key.ogg")
+    except:
+        key_s = None
+
+    try:
         die_s = pygame.mixer.Sound("assets/die.ogg")
     except:
-        coin_s = dash_s = key_s = die_s = None
+        die_s = None
 
     while running:
         SCREEN.blit(NEWBG, (0, 0))
@@ -1809,7 +1847,9 @@ async def main():
                             add_collectable_at_cell(gx, gy)
                         elif selected_tile == KEY_TILE_ID:
                             try:
-                                key_id = input("Enter key id for this key: ").strip()
+                                key_id = safe_input("Enter key id for this key:", None)
+                                if key_id:
+                                    key_id = key_id.strip()
                             except Exception:
                                 key_id = None
                             add_key_for_pair((gx, gy), key_id)
@@ -1826,7 +1866,9 @@ async def main():
                         if selected_tile == 55:
                             if grid.in_bounds(gx, gy + 1):
                                 try:
-                                    door_id = input("Enter door id for this door group: ").strip()
+                                    door_id = safe_input("Enter door id for this door:", None)
+                                    if door_id:
+                                        door_id = key_id.strip()
                                 except Exception:
                                     door_id = None
                                 grid.set_tile(gx, gy, 55)
