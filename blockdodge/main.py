@@ -47,8 +47,6 @@ input_text = ""
 BTN_CUSTOM = pygame.Rect(W/2 - 150, H/2 + 150, 300, 50)
 custom_route = None
 # Müzik için mixer.music kullanıyoruz (start_pos desteği için)
-pygame.mixer.music.load("assets/dihblaster.ogg")
-pygame.mixer.music.set_volume(0.3)
 mus = pygame.mixer.Sound("assets/dihblaster.ogg")
 hit_sound = pygame.mixer.Sound("assets/hit.ogg")
 
