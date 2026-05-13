@@ -38,9 +38,9 @@ OG_SKIP_TIME = 0
 SKIP_TIME = 0
 shake_amount = 0
 # Mobil Buton Bölgeleri
-pygame.mixer.pre_init(44100, -16, 1, 512)
+pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.mixer.init()
-pygame.mixer.set_num_channels(8)
+pygame.init()
 pygame.font.init()
 
 W, H = 1280, 720
