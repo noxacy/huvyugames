@@ -37,6 +37,7 @@ shake_amount = 0
 pygame.mixer.pre_init(44100, -16, 1, 512)
 pygame.mixer.init()
 pygame.mixer.set_num_channels(8)
+pygame.font.init()
 
 W, H = 1280, 720
 screen = pygame.display.set_mode((W, H))
@@ -64,15 +65,6 @@ try:
     if os.path.exists("scores.json"):
         with open("scores.json", "r") as f: high_scores = json.load(f)
 except: pass
-
-start_ticks = pygame.time.get_ticks()
-
-# Update döngüsünde:
-if state == "GAME":
-    # Bu hesaplama, yükleme sırasında olan lagı otomatik olarak kompanse eder.
-    # Çünkü get_ticks() donma süresini de sayar.
-    actual_elapsed = (pygame.time.get_ticks() - start_ticks) / 1000.0
-    music_time = actual_elapsed * time_scale + SKIP_TIME
 
 # Skor anahtarı için yardımcı fonksiyon (Modları isme ekler)
 def get_mode_suffix():
@@ -437,6 +429,15 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, shake=0, dam
     cached_draw(f"%{progress_percent}", "#ffffff", (W/2 + ox, 70 + oy), True)
 
     pygame.display.flip()
+
+start_ticks = pygame.time.get_ticks()
+
+# Update döngüsünde:
+if state == "GAME":
+    # Bu hesaplama, yükleme sırasında olan lagı otomatik olarak kompanse eder.
+    # Çünkü get_ticks() donma süresini de sayar.
+    actual_elapsed = (pygame.time.get_ticks() - start_ticks) / 1000.0
+    music_time = actual_elapsed * time_scale + SKIP_TIME
 
 async def main():
     global running, hp, dmgcd, objects, state, current_song_path, route, TOTAL_TIME, is_mobile, game_mode, time_scale, is_1hp, is_zen, input_active, input_text, custom_route, pygame, shake_amount, joy_pos, show_joystick, is_touching
