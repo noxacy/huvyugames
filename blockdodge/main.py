@@ -1,6 +1,11 @@
 import pygame, math, json, asyncio, sys, os
 
-
+if sys.platform == "emscripten":
+    try:
+        pygame.mixer.SoundPatch()
+        print("Pygbag SoundPatch active")
+    except:
+        pass
 
 # Web ortamı kontrolüa
 IS_WEB = sys.platform == "emscripten"
