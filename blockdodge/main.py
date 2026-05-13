@@ -568,9 +568,13 @@ async def main():
             spawn_times = [0]
             dmgcd = 0
             curr = 0
-            for d in route:
+            for i, d in enumerate(route):
                 curr += d["duration"] / time_scale
                 spawn_times.append(curr)
+                
+                # Her 50 objede bir tarayıcıya "işini yap" şansı ver
+                if i % 50 == 0:
+                    await asyncio.sleep(0)
 
             music_time = SKIP_TIME
             while route_index < len(spawn_times) and spawn_times[route_index] < SKIP_TIME: route_index += 1
