@@ -1,4 +1,4 @@
-import pygame, json, os, asyncio, random, math, platform
+import pygame, json, os, asyncio, random, math, platform, sys
 IS_MOBILE = platform.system() == "Emscripten" or hasattr(pygame, "FINGERDOWN")
 pygame.init()
 Info = pygame.display.Info()
@@ -841,5 +841,5 @@ async def main():
         draw(dt)
         await asyncio.sleep(0)
 
-asyncio.run(main())
-pygame.quit()
+if __name__ == "__main__":
+    asyncio.run(main())
