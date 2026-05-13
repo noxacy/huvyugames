@@ -50,7 +50,7 @@ BTN_CUSTOM = pygame.Rect(W/2 - 150, H/2 + 150, 300, 50)
 custom_route = None
 # Müzik için mixer.music kullanıyoruz (start_pos desteği için)
 mus = pygame.mixer.Sound("assets/dihblaster.ogg")
-hit_sound = pygame.mixer.Sound("assets/hit.ogg")
+hit_sound = pygame.mixer.Sound("assets/hit.wav")
 
 # Global alanda değişkenleri ayarla
 is_1hp = False
