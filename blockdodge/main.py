@@ -57,11 +57,22 @@ is_1hp = False
 is_zen = False
 time_scale = 1.0 # 1.0 normal, 1.5 hızlı, 0.7 yavaş
 
+
+
 high_scores = {}
 try:
     if os.path.exists("scores.json"):
         with open("scores.json", "r") as f: high_scores = json.load(f)
 except: pass
+
+start_ticks = pygame.time.get_ticks()
+
+# Update döngüsünde:
+if state == "GAME":
+    # Bu hesaplama, yükleme sırasında olan lagı otomatik olarak kompanse eder.
+    # Çünkü get_ticks() donma süresini de sayar.
+    actual_elapsed = (pygame.time.get_ticks() - start_ticks) / 1000.0
+    music_time = actual_elapsed * time_scale + SKIP_TIME
 
 # Skor anahtarı için yardımcı fonksiyon (Modları isme ekler)
 def get_mode_suffix():
