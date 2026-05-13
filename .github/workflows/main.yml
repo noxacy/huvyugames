@@ -30,7 +30,7 @@ jobs:
           mkdir -p deploy
 
           # Root site files
-          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy/ || true
+          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy cs.png/ || true
 
           for dir in */; do
             dirname=${dir%/}
@@ -67,6 +67,7 @@ jobs:
               # Assets
               cp "$dirname"/*.png "deploy/$dirname/" 2>/dev/null || true
               cp "$dirname"/*.jpg "deploy/$dirname/" 2>/dev/null || true
+              cp "$dirname"/*.json "deploy/$dirname/" 2>/dev/null || true
 
               # extra html pages
               if [ -f "$dirname/${dirname}_play.html" ]; then
