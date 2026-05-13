@@ -32,7 +32,6 @@ if os.path.exists("scores.json"):
 OG_SKIP_TIME = 0
 SKIP_TIME = 0
 shake_amount = 0
-#
 # Mobil Buton Bölgeleri
 pygame.mixer.pre_init(44100, -16, 1, 512)
 pygame.mixer.init()
