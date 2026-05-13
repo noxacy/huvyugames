@@ -19,6 +19,7 @@ if IS_WEB:
     try:
         # userAgentData yerine userAgent kullanmak daha güvenlidir
         from js import window
+        window.eval("if (window.audioContext) { window.audioContext.resume(); }")
         user_agent = window.navigator.userAgent
         if any(x in user_agent for x in ["Mobile", "Android", "iPhone", "iPad"]):
             is_mobile = True
