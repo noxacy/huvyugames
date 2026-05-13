@@ -1,5 +1,7 @@
 import pygame, math, json, asyncio, sys, os
 
+
+
 # Web ortamı kontrolüa
 IS_WEB = sys.platform == "emscripten"
 
@@ -31,8 +33,9 @@ SKIP_TIME = 0
 shake_amount = 0
 
 # Mobil Buton Bölgeleri
+pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
-pygame.mixer.init()
+
 W, H = 1280, 720
 screen = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
