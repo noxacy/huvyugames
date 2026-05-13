@@ -1,12 +1,12 @@
 import pygame, sys, time, random, asyncio, json
 
 pygame.init()
-pygame.display.set_caption("Akif Clicker v1.0")
+pygame.display.set_caption("Huvyu Clicker v1.0")
 WIDTH, HEIGHT = 1920, 1080
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 clock = pygame.time.Clock()
 
-akif = pygame.image.load("./assets/akifclicker.png").convert_alpha()
+akif = pygame.image.load("./assets/huvyuclicker.png").convert_alpha()
 bg = pygame.image.load("./assets/abc.jpg").convert()
 boximg = pygame.image.load("./assets/Box.png").convert_alpha()
 smallboximg = pygame.image.load("./assets/SmallBox.png").convert_alpha()
@@ -38,23 +38,23 @@ class Game():
 
 
         self.buildings = [
-            ["Kenan", "Clicks the news.", 20, 1, 1, 1190, 15, 0, 1.15],
-            ["Deniz", "Buys grandmas.", 150, 6, 1, 1555, 15, 0, 1.16],
-            ["Zeki", "Plays tennis.", 1500, 18, 1, 1190, 130, 0, 1.17],
-            ["Agah", "SHUT UP!", 18000, 75, 1, 1555, 130, 0, 1.18],
-            ["Poyraz", "PDF Reader", 220000, 450, 1, 1190, 245, 0, 1.19],
-            ["Huzeyfe", "AkifCoin Miner", 2.8*10**6, 2200, 1, 1555, 245, 0, 1.20],
-            ["Dimes", "Worships juice.", 4.5*10**7, 12000, 1, 1190, 360, 0, 1.21],
-            ["Seyfullah", "Is Annoying", 8*10**8, 70000, 1, 1555, 360, 0, 1.22],
-            ["Suheyla", "Draws M. Kemal", 1.5*10**10, 400000, 1, 1190, 475, 0, 1.23],
-            ["Black Deniz", "Dark Grandmas.", 2.5*10**11, 2.5*10**6, 1, 1555, 475, 0, 1.24],
-            ["AYTGames", "Pro Gamer.", 5*10**12, 1.8*10**7, 1, 1190, 590, 0, 1.25],
-            ["Can K.", "Math Genius.", 9*10**13, 1.2*10**8, 1, 1555, 590, 0, 1.26],
-            ["EGE", "Plays CR.", 1.8*10**15, 9*10**8, 1, 1190, 705, 0, 1.27],
-            ["Ruzgar", "Talks in class.", 3.5*10**16, 7.5*10**9, 1, 1555, 705, 0, 1.28],
-            ["Sukru", "Alhamdulillah.", 7*10**17, 6*10**10, 1, 1190, 820, 0, 1.29],
-            ["Yigit", "Just exists.", 1.5*10**19, 5*10**11, 1, 1555, 820, 0, 1.30],
-            ["Theomen", ":)", 4*10**20, 4.5*10**12, 1, 1190, 935, 0, 1.35],
+            ["Grandpa", "Clicks the news.", 20, 1, 1, 1190, 15, 0, 1.15],
+            ["Grandma", "Clicks better news.", 150, 6, 1, 1555, 15, 0, 1.16],
+            ["Your avarage guy", "Plays football.", 1500, 18, 1, 1190, 130, 0, 1.17],
+            ["Brainrot", "brr skibi", 18000, 75, 1, 1555, 130, 0, 1.18],
+            ["Jeffrey", "PDF Reader", 220000, 450, 1, 1190, 245, 0, 1.19],
+            ["FREE BOBUX", "Bitcoin Miner", 2.8*10**6, 2200, 1, 1555, 245, 0, 1.20],
+            ["Dimes fruit mix", "...juice.", 4.5*10**7, 12000, 1, 1190, 360, 0, 1.21],
+            ["Gemini", "Artifical Intelligence.", 8*10**8, 70000, 1, 1555, 360, 0, 1.22],
+            ["that one guy", "Is Annoying.", 1.5*10**10, 400000, 1, 1190, 475, 0, 1.23],
+            ["Nig-", "httimee.", 2.5*10**11, 2.5*10**6, 1, 1555, 475, 0, 1.24],
+            ["Huvyugames", "The best games ever.", 5*10**12, 1.8*10**7, 1, 1190, 590, 0, 1.25],
+            ["Albert Epstein.", "Math Genius.", 9*10**13, 1.2*10**8, 1, 1555, 590, 0, 1.26],
+            ["You", "Plays huvyu clicker.", 1.8*10**15, 9*10**8, 1, 1190, 705, 0, 1.27],
+            ["Wind", "ts wasn't me gang 🥀.", 3.5*10**16, 7.5*10**9, 1, 1555, 705, 0, 1.28],
+            ["GD", "Click.", 7*10**17, 6*10**10, 1, 1190, 820, 0, 1.29],
+            ["The quiet guy", "exists.", 1.5*10**19, 5*10**11, 1, 1555, 820, 0, 1.30],
+            ["Theodore", ":)", 4*10**20, 4.5*10**12, 1, 1190, 935, 0, 1.35],
             ["Child Man", "-dam", 5*10**25, 5*10**13, 1, 1555, 935, 0, 1.0]
         ]
         self.b_scales = [1.0] * len(self.buildings)

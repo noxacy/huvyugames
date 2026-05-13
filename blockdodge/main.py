@@ -506,38 +506,49 @@ async def main():
                 continue
 
             if state == "MENU":
-                if e.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
-                    if e.type == pygame.FINGERDOWN:
-                            pos = (int(e.x * W), int(e.y * H))
-                    elif e.type == pygame.MOUSEBUTTONDOWN:
-                        pos = e.pos
+                pos = None
+                if e.type == pygame.FINGERDOWN:
+                    # Mobil koordinatları ekran boyutuna göre normalize et
+                    pos = (int(e.x * W), int(e.y * H))
+                elif e.type == pygame.MOUSEBUTTONDOWN:
+                    pos = e.pos
 
-                    # Mod Butonları Kontrolü
-                    if pos:
-                        if BTN_1HP.collidepoint(pos):
-                            is_1hp = not is_1hp
-                        elif BTN_ZEN.collidepoint(pos):
-                            is_zen = not is_zen
-                        elif BTN_FAST.collidepoint(pos):
-                            time_scale = 1.25 if time_scale != 1.25 else 1.0
-                        elif BTN_SLOW.collidepoint(pos):
-                            time_scale = 0.75 if time_scale != 0.75 else 1.0,
+                if pos:
+                    # 1. Mod Butonları Kontrolü
+                    if BTN_1HP.collidepoint(pos):
+                        is_1hp = not is_1hp
+                    elif BTN_ZEN.collidepoint(pos):
+                        is_zen = not is_zen
+                    elif BTN_FAST.collidepoint(pos):
+                        # Hız kontrolü - virgül hatası giderildi
+                        time_scale = 1.25 if time_scale != 1.25 else 1.0
+                    elif BTN_SLOW.collidepoint(pos):
+                        # Yavaşlık kontrolü - virgül hatası giderildi
+                        time_scale = 0.75 if time_scale != 0.75 else 1.0
 
-                    # Şarkı Seçimi Kontrolü
+                    # 2. Şarkı Seçimi Kontrolü
                     for i in range(len(SONGS)):
-                        # Tıklanan yer şarkı listesi hizasındaysa seç
-                        if H/2 + (i * 50) - 25 < pos[1] < H/2 + (i * 50) + 25:
+                        song_y_start = H/2 + (i * 50) - 25
+                        song_y_end = H/2 + (i * 50) + 25
+                        # Yatayda da sınır koymak daha sağlıklı olur
+                        if song_y_start < pos[1] < song_y_end:
                             current_song_path = list(SONGS.keys())[i]
 
+                    # 3. Custom JSON ve Start Butonu
                     if BTN_CUSTOM.collidepoint(pos):
                         if IS_WEB:
                             paste_data = window.prompt("Paste JSON:")
                             if paste_data:
                                 try:
+                                    import json
                                     data = json.loads(str(paste_data))
-                                    custom_route = data["route"]; input_text = "JSON Loaded!"
+                                    custom_route = data["route"] if isinstance(data, dict) else data
+                                    input_text = "JSON Loaded!"
                                 except: input_text = "Invalid!"
-                        else: input_active = True; input_text = ""
+                        else: 
+                            input_active = True
+                            input_text = ""
+                            
                     elif BTN_START.collidepoint(pos):
                         start_trigger = True
                 if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE: start_trigger = True

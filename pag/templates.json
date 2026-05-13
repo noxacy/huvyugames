@@ -1,38 +1,165 @@
 {
-    "plants": 
-    {
-        "turnip": 
-        {
+    "plants": {
+        "turnip": {
             "name": "Turnip",
             "cost": 30,
             "sell_c": 40,
             "id": 0,
             "stock": 10,
             "rarity": 0.9,
-            "phases": {
-                "phase0":  {"grow": 0},
-                "phase1": {"grow": 10},
-                "phase2": {"grow": 20},
-                "phase3": {"grow": 15},
-                "phase4": {"grow": 20},
-                "phase5": {"grow": 30}
-            }
+            "phases": { "0": {"grow": 5}, "1": {"grow": 10}, "2": {"grow": 20}, "3": {"grow": 15}, "4": {"grow": 20}}
         },
-        "rose": 
-        {
+        "rose": {
             "name": "Rose",
             "cost": 50,
             "sell_c": 70,
             "id": 1,
             "rarity": 0.6,
-            "phases": {
-                "phase0":  {"grow": 0},
-                "phase1": {"grow": 30},
-                "phase2": {"grow": 40},
-                "phase3": {"grow": 35},
-                "phase4": {"grow": 30},
-                "phase5": {"grow": 50}
-            }
+            "phases": { "0": {"grow": 12}, "1": {"grow": 30}, "2": {"grow": 40}, "3": {"grow": 35}, "4": {"grow": 30}}
+        },
+        "cucumber": {
+            "name": "Cucumber",
+            "cost": 50,
+            "sell_c": 70,
+            "id": 2,
+            "rarity": 0.6,
+            "phases": { "0": {"grow": 10}, "1": {"grow": 30}, "2": {"grow": 40}, "3": {"grow": 35}, "4": {"grow": 30}}
+        },
+        "tulip": {
+            "name": "Tulip",
+            "cost": 45,
+            "sell_c": 65,
+            "id": 3,
+            "rarity": 0.7,
+            "phases": { "0": {"grow": 8}, "1": {"grow": 25}, "2": {"grow": 35}, "3": {"grow": 30}, "4": {"grow": 25}}
+        },
+        "tomato": {
+            "name": "Tomato",
+            "cost": 40,
+            "sell_c": 65,
+            "id": 4,
+            "rarity": 0.8,
+            "phases": { "0": {"grow": 7}, "1": {"grow": 20}, "2": {"grow": 25}, "3": {"grow": 25}, "4": {"grow": 25}}
+        },
+        "melon": {
+            "name": "Melon",
+            "cost": 120,
+            "sell_c": 210,
+            "id": 5,
+            "rarity": 0.3,
+            "phases": { "0": {"grow": 25}, "1": {"grow": 60}, "2": {"grow": 80}, "3": {"grow": 70}, "4": {"grow": 60}}
+        },
+        "eggplant": {
+            "name": "Eggplant",
+            "cost": 60,
+            "sell_c": 100,
+            "id": 6,
+            "rarity": 0.5,
+            "phases": { "0": {"grow": 15}, "1": {"grow": 35}, "2": {"grow": 45}, "3": {"grow": 40}, "4": {"grow": 35}}
+        },
+        "lemon": {
+            "name": "Lemon",
+            "cost": 150,
+            "sell_c": 280,
+            "id": 7,
+            "rarity": 0.2,
+            "phases": { "0": {"grow": 35}, "1": {"grow": 80}, "2": {"grow": 120}, "3": {"grow": 110}, "4": {"grow": 90}}
+        },
+        "pineapple": {
+            "name": "Pineapple",
+            "cost": 200,
+            "sell_c": 450,
+            "id": 8,
+            "rarity": 0.15,
+            "phases": { "0": {"grow": 50}, "1": {"grow": 120}, "2": {"grow": 150}, "3": {"grow": 140}, "4": {"grow": 120}}
+        },
+        "rice": {
+            "name": "Rice",
+            "cost": 25,
+            "sell_c": 45,
+            "id": 9,
+            "rarity": 0.85,
+            "phases": { "0": {"grow": 4}, "1": {"grow": 15}, "2": {"grow": 20}, "3": {"grow": 20}, "4": {"grow": 15}}
+        },
+        "wheat": {
+            "name": "Wheat",
+            "cost": 20,
+            "sell_c": 35,
+            "id": 10,
+            "rarity": 0.95,
+            "phases": { "0": {"grow": 3}, "1": {"grow": 12}, "2": {"grow": 15}, "3": {"grow": 15}, "4": {"grow": 12}}
+        },
+        "grapes": {
+            "name": "Grapes",
+            "cost": 110,
+            "sell_c": 230,
+            "id": 11,
+            "rarity": 0.35,
+            "phases": { "0": {"grow": 22}, "1": {"grow": 55}, "2": {"grow": 75}, "3": {"grow": 65}, "4": {"grow": 55}}
+        },
+        "strawberry": {
+            "name": "Strawberry",
+            "cost": 80,
+            "sell_c": 160,
+            "id": 12,
+            "rarity": 0.45,
+            "phases": { "0": {"grow": 18}, "1": {"grow": 40}, "2": {"grow": 55}, "3": {"grow": 50}, "4": {"grow": 40}}
+        },
+        "cassava": {
+            "name": "Cassava",
+            "cost": 55,
+            "sell_c": 95,
+            "id": 13,
+            "rarity": 0.55,
+            "phases": { "0": {"grow": 14}, "1": {"grow": 30}, "2": {"grow": 40}, "3": {"grow": 40}, "4": {"grow": 30}}
+        },
+        "potato": {
+            "name": "Potato",
+            "cost": 35,
+            "sell_c": 60,
+            "id": 14,
+            "rarity": 0.8,
+            "phases": { "0": {"grow": 6}, "1": {"grow": 18}, "2": {"grow": 22}, "3": {"grow": 22}, "4": {"grow": 18}}
+        },
+        "coffee": {
+            "name": "Coffee",
+            "cost": 180,
+            "sell_c": 400,
+            "id": 15,
+            "rarity": 0.2,
+            "phases": { "0": {"grow": 45}, "1": {"grow": 100}, "2": {"grow": 140}, "3": {"grow": 130}, "4": {"grow": 110}}
+        },
+        "orange": {
+            "name": "Orange",
+            "cost": 100,
+            "sell_c": 190,
+            "id": 16,
+            "rarity": 0.4,
+            "phases": { "0": {"grow": 20}, "1": {"grow": 50}, "2": {"grow": 70}, "3": {"grow": 60}, "4": {"grow": 50}}
+        },
+        "avocado": {
+            "name": "Avocado",
+            "cost": 220,
+            "sell_c": 500,
+            "id": 17,
+            "rarity": 0.1,
+            "phases": { "0": {"grow": 60}, "1": {"grow": 130}, "2": {"grow": 160}, "3": {"grow": 150}, "4": {"grow": 130}}
+        },
+        "corn": {
+            "name": "Corn",
+            "cost": 45,
+            "sell_c": 80,
+            "id": 18,
+            "rarity": 0.75,
+            "phases": { "0": {"grow": 9}, "1": {"grow": 25}, "2": {"grow": 35}, "3": {"grow": 30}, "4": {"grow": 25}}
+        },
+        "sunflower": {
+            "name": "Sunflower",
+            "cost": 70,
+            "sell_c": 130,
+            "id": 19,
+            "rarity": 0.5,
+            "phases": { "0": {"grow": 16}, "1": {"grow": 40}, "2": {"grow": 50}, "3": {"grow": 45}, "4": {"grow": 40}}
         }
     }
 }
