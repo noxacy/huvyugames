@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Playing Project X | Huvyu Games</title>
+    <title>Playing Tetris Classic | Huvyu Games</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3553688527206955" crossorigin="anonymous"></script>
     
     <style>
@@ -39,36 +39,38 @@
 
     <div class="nav-bar">
         <a href="../index.html">← RETURN TO HOME</a>
-        <div style="font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;">PROJECT X <span style="color:#00ff00">V1.0</span></div>
+        <div style="font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;">TETRIS <span style="color:#00ff00">CLASSIC</span></div>
         <button class="fullscreen-btn" onclick="openFullscreen();">LAUNCH FULLSCREEN</button>
     </div>
 
     <div class="container">
         <div class="game-wrapper" id="gameArea">
-            <iframe id="gameIframe" src="index.html" scrolling="no"></iframe>
+            <!-- Ensure src points to your actual tetris game file -->
+            <iframe id="gameIframe" src="tetris.html" scrolling="no"></iframe>
         </div>
 
         <div class="game-info">
-            <h2>Project X: The Ascent</h2>
-            <p>Take control of a highly advanced <strong>Combat Unit</strong> in this high-stakes action platformer. In <strong>Project X</strong>, you must navigate through a series of increasingly difficult vertical environments. Your objective is to climb through treacherous industrial sectors, bypassing lethal defensive systems and physical barriers to reach the summit.</p>
+            <h2>Tetris: Master the Blocks</h2>
+            <p>Welcome to the ultimate version of the world's most famous puzzle game. In <strong>Tetris Classic</strong>, your objective is to arrange falling geometric shapes, known as <strong>Tetriminos</strong>, to create solid horizontal lines. Clearing lines prevents the screen from filling up and earns you high scores.</p>
 
             <div class="highlight-box">
-                <strong>Combat Protocol:</strong> Every obstacle you scale brings you closer to the final showdown. Preserve your energy and master your mobility to survive the climb.
+                <strong>Strategy Tip:</strong> Aim for a "Tetris" by clearing four lines at once with the long I-piece to maximize your score multiplier.
             </div>
 
-            <h3>Mission Directives</h3>
-            <p>To reach the final confrontation, you must master several robotic movement systems and tactical strategies:</p>
+            <h3>How to Play</h3>
+            <p>Master the mechanical precision required to stay ahead of the increasing speed:</p>
             
             <ul>
-                <li><strong>Vertical Navigation:</strong> Utilize thrusters and precision mechanical grips to scale sheer surfaces and moving platforms. Time your jumps to avoid environmental hazards.</li>
-                <li><strong>Hazard Evasion:</strong> The path is littered with automated defense turrets and electromagnetic traps. Use the robot's high-speed dash to navigate through tight windows of safety.</li>
-                <li><strong>The Final Encounter:</strong> At the peak of the facility, a massive <strong>Guardian Boss</strong> awaits. You must use the skills learned during your ascent to target its weaknesses and neutralize the threat.</li>
+                <li><strong>Movement:</strong> Use the <strong>Left and Right Arrow Keys</strong> to position the blocks. Use the <strong>Down Arrow</strong> to increase the fall speed (Soft Drop).</li>
+                <li><strong>Rotation:</strong> Press the <strong>Up Arrow Key</strong> or <strong>X</strong> to rotate the pieces 90 degrees to fit into tight gaps.</li>
+                <li><strong>Hard Drop:</strong> Press the <strong>Spacebar</strong> to instantly lock the current piece to the bottom of the board.</li>
+                <li><strong>The Challenge:</strong> As you clear more lines, the game speed increases. Keep your stack low and your reflexes sharp!</li>
             </ul>
 
-            <h3>System Requirements</h3>
-            <p>Project X is optimized for low-latency performance using <strong>WebAssembly (WASM)</strong>, ensuring smooth robotic movements and responsive combat controls directly in your browser.</p>
+            <h3>Technical Specifications</h3>
+            <p>This version of Tetris is built with high-performance <strong>Canvas API</strong> logic, ensuring a smooth 60 FPS experience with zero input lag for competitive play.</p>
 
-            <p><em>Initiate your systems, climb the heights, and defeat the boss to secure victory!</em></p>
+            <p><em>Focus your mind, stack the blocks, and reach the top of the leaderboard!</em></p>
         </div>
 
         <div class="sidebar">
@@ -87,11 +89,11 @@
                 <h4 style="color:#00ff00; margin-top:0;">More from Huvyu Games</h4>
                 <a href="../td/td_play.html" class="mini-card">
                     <div class="mini-thumb"></div>
-                    <div><strong>Tower Defense</strong><br><span style="color:#80ff80; font-size:0.8rem">Tactical Strategy</span></div>
+                    <div><strong>Tower Defense</strong><br><span style="color:#80ff80; font-size:0.8rem">Strategy</span></div>
                 </a>
-                <a href="#" class="mini-card">
+                <a href="../project-x/play.html" class="mini-card">
                     <div class="mini-thumb"></div>
-                    <div><strong>Classic Arcade</strong><br><span style="color:#80ff80; font-size:0.8rem">Retro Action</span></div>
+                    <div><strong>Project X</strong><br><span style="color:#80ff80; font-size:0.8rem">Action Platformer</span></div>
                 </a>
             </div>
         </div>
@@ -110,7 +112,7 @@
             }
             
             if (screen.orientation && screen.orientation.lock) {
-                await screen.orientation.lock('landscape').catch(e => console.log("Orientation lock not supported"));
+                await screen.orientation.lock('any').catch(e => console.log("Orientation lock not supported"));
             }
         } catch (err) {
             console.error("Error attempting to enable full-screen mode:", err);
