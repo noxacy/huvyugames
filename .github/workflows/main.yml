@@ -30,7 +30,7 @@ jobs:
           mkdir -p deploy
 
           # Root site files
-          cp index.html ads.txt privacy.html terms.html about.html contact.html deploy cs.png/ || true
+          cp index.html ads.txt privacy.html terms.html about.html contact.html cs.png deploy/ || true
 
           for dir in */; do
             dirname=${dir%/}
