@@ -828,7 +828,7 @@ def draw(dt):
     pygame.display.flip()
 
 async def main():
-    global running 
+    global running, game, W, H
     import platform
     if platform.system() == "Emscripten":
         import js
