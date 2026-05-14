@@ -162,14 +162,20 @@ SONGS = {
         "slow": "assets/dihblaster_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/dihblaster_fast.ogg"  # Hızlandırılmış versiyon
     },
+    "assets/creoflow.ogg": {
+        "name": "Flow - Noxacy Remix (INSANITY)",
+        "data": "assets/creoflow.json",
+        "slow": "assets/creoflow_slow.ogg", # Yavaşlatılmış versiyon
+        "fast": "assets/creoflow_fast.ogg"  # Hızlandırılmış versiyon
+    },
     "assets/ordih.ogg": {
-        "name": "Animation Warrior Theme - Noxacy Remix (INSANITY)",
+        "name": "Animation Warrior Theme - Noxacy Remix (DEMONIC)",
         "data": "assets/ordih.json",
         "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
     }
 }
-current_song_path = list(SONGS.keys())[0]
+current_song_path = list(SONGS.keys())[2]
 state = "MENU"
 
 # Tüm şarkı verilerini oyun açılırken bir kez yükle
@@ -194,7 +200,7 @@ def draw_overlay(title, subtitle, color="#ffffff"):
 
 def draw_menu():
     screen.fill("#050505")
-    cached_draw("BLOCKDODGE v1.5", "#ffffff", (W/2, H/2 - 180), True)
+    cached_draw("BLOCKDODGE v1.5", "#ffffff", (W/2, H/3 - 180), True)
 
     current_suffix = get_mode_suffix() 
 
@@ -208,7 +214,7 @@ def draw_menu():
         display_score = high_scores.get(score_key, 0)
 
         # Rengi level_color olarak kullanıyoruz
-        cached_draw(f"{'> ' if is_selected else ''}{info['name']} (Best: %{display_score})", level_color, (W/2, H/2 + (i * 50)), True)
+        cached_draw(f"{'> ' if is_selected else ''}{info['name']} (Best: %{display_score})", level_color, (W/2, H/3 + (i * 50)), True)
 
     # Mod Butonları (Renkleri kendi mantığında kalıyor)
     modes = [
@@ -463,6 +469,17 @@ class LevelEditor:
     def add_element(self, pos, obj_type=None):
         if obj_type is None:
             obj_type = self.mode.lower()
+        # Obje ekleme (Add) kısmında mouse pozisyonunu şöyle al:
+        mx, my = pos
+        available_w = W - SIDEBAR_W
+        available_h = H - self.timeline_h
+
+        # Sıkıştırılmış mouse pozisyonunu 1280x720'ye geri çevir
+        real_x = int((mx / available_w) * W)
+        real_y = int((my / available_h) * H)
+
+        # Yeni objeyi bu real_x, real_y koordinatlarına ekle
+        pos = (real_x, real_y)
 
         # --- 1. DOĞUŞ ZAMANI (TIMELINE YERİ) HESABI ---
         # Şu ana kadarki objelerin bekleme sürelerini (duration) topla
@@ -503,9 +520,10 @@ class LevelEditor:
 
         elif obj_type == "vfx":
             new_obj.update({
+                "time": self.current_time,
                 "time_duration": 1.0, # Bu VFX'in kendi iç süresi
                 "bg_color": [0, 0, 0],
-                "p_color": [0, 255, 255],
+                "p_color": [255, 255, 255],
                 "smooth": True
             })
 
@@ -577,42 +595,55 @@ class LevelEditor:
             # music.get_pos() bazen sapıtabilir, dt ile toplamak daha stabildir
             self.current_time += dt
     def draw(self, screen):
-        # 1. Başlangıç renkleri
-        res_bg = [15, 15, 15]
+        preview_surf = pygame.Surface((W,H))
+        # 1. TEMEL BAŞLANGIÇ RENKLERİ
+        res_bg = [15, 15, 15] 
         res_p = [0, 255, 255]
 
-        # VFX'leri zamana göre sırala
-        vfx_list = [o for o in self.route if o.get("type") == "vfx"]
-        vfx_list.sort(key=lambda x: x.get("time", 0))
+        # 2. VFX'LERİ ZAMANA GÖRE SIRALA (time'ı N/A olanları 0 sayıp çökmesini engelleyelim)
+        vfx_list = [o for o in self.route if o.get("type", "").lower() == "vfx"]
+        for v in vfx_list:
+            if v.get("time") == "N/A" or v.get("time") is None:
+                v["time"] = 0.0 # Hata önleyici
 
-        for i, v in enumerate(vfx_list):
-            v_start = v.get("time", 0)
-            v_dur = v.get("time_duration", 1.0)
+        vfx_list.sort(key=lambda x: float(x.get("time", 0)))
+
+        # 3. İSTEDİĞİN DÜZ MANTIK: Geçmişten bugüne tarama
+        for v in vfx_list:
+            v_start = float(v.get("time", 0))
             
-            if self.current_time >= v_start:
-                target_bg = v.get("bg_color", [0, 0, 0])
-                target_p = v.get("p_color", [0, 255, 255])
-                
-                if v.get("smooth", True) and v_dur > 0:
-                    # Geçiş ne kadar tamamlandı? (0.0 - 1.0)
-                    progress = min(1.0, (self.current_time - v_start) / v_dur)
-                    # Bir önceki rengi baz alarak lerp yap
-                    for c in range(3):
-                        res_bg[c] += (target_bg[c] - res_bg[c]) * progress
-                        res_p[c] += (target_p[c] - res_p[c]) * progress
-                else:
-                    res_bg, res_p = list(target_bg), list(target_p)
-        
-        screen.fill(res_bg)
-        pygame.draw.circle(screen, res_p, (W//2, H//2), 12, 2)
-        
-        # ... Geri kalan mermi/blok çizim kodların ...
-        
-        # O anki zamana kadar olan en son VFX'i bul
-        active_vfx = None
-        for o in self.route:
-            if o.get("type") == "vfx" and o.get("time", 0) <= self.current_time:
-                active_vfx = o
+            # Eğer çubuk henüz bu VFX'in üzerine gelmediyse DUR.
+            if self.current_time < v_start:
+                break 
+
+            v_dur = float(v.get("time_duration", 1.0))
+            target_bg = v.get("bg_color", [0, 0, 0])
+            target_p = v.get("p_color", [0, 255, 255])
+            
+            # Smooth kontrolü (0 veya False ise anında değişecek)
+            is_smooth = v.get("smooth", False)
+            if is_smooth in [1, "1", True, "True"]:
+                is_smooth = True
+            else:
+                is_smooth = False
+
+            # DURUM 1: SMOOTH AÇIK VE TAM GEÇİŞ AŞAMASINDAYIZ
+            if is_smooth and v_dur > 0 and self.current_time < (v_start + v_dur):
+                progress = (self.current_time - v_start) / v_dur
+                for c in range(3):
+                    # Bir önceki rengin üzerine ekleyerek yumuşak geç
+                    res_bg[c] += (target_bg[c] - res_bg[c]) * progress
+                    res_p[c] += (target_p[c] - res_p[c]) * progress
+                # Geçişte olduğumuz için sonrakilere bakmayı bırakıyoruz
+                break
+            
+            # DURUM 2: SMOOTH KAPALI YADA GEÇİŞ ÇOKTAN BİTTİ
+            else:
+                # "ÇAT" diye rengi hedef renge eşitle
+                res_bg = list(target_bg)
+                res_p = list(target_p)
+
+        preview_surf.fill(res_bg)
         
     
         # --- 2. OBJELERİ ÇİZDİR --
@@ -620,8 +651,8 @@ class LevelEditor:
         for i, obj in enumerate(self.route):
             o_type = obj.get("type", "object").lower()
             start_t = obj.get("time", 0)
-            current_sum_time += obj.get("duration", 0)
             spawn_t = current_sum_time
+            current_sum_time += obj.get("duration", 0)
             
             # VFX Karesi Çizimi
             if o_type == "vfx":
@@ -631,8 +662,8 @@ class LevelEditor:
                     px, py = obj.get("pos", [W//2, H//2])
                     vfx_rect = pygame.Rect(px - 20, py - 20, 40, 40)
                     v_col = (255, 255, 0) if self.selected_idx == i else (100, 100, 0)
-                    pygame.draw.rect(screen, v_col, vfx_rect, 2)
-                    cached_draw("VFX", (255, 255, 255), vfx_rect.center, True)
+                    pygame.draw.rect(preview_surf, v_col, vfx_rect, 2)
+                    cached_draw("VFX", (255, 255, 255), vfx_rect.center, True, surface=preview_surf)
                 continue # VFX'in başka çizimi yok
             
             
@@ -642,17 +673,20 @@ class LevelEditor:
                 
                 # Mermi sadece doğduğu an ile uçuşunun bittiği an arasında çizilir
                 if spawn_t <= self.current_time <= spawn_t + flight_duration:
-                    progress = (self.current_time - spawn_t) / flight_duration
+                    if flight_duration <= 0:
+                        progress = 1.0 # Eğer süre 0 ise obje direkt hedefe ışınlanmış varsayılsın
+                    else:
+                        progress = (self.current_time - spawn_t) / flight_duration
                     prog_eased = 1 - (1 - progress) ** 3 # ease-out
                     
                     cur_x = obj["pos"][0] + (obj["target"][0] - obj["pos"][0]) * prog_eased
                     cur_y = obj["pos"][1] + (obj["target"][1] - obj["pos"][1]) * prog_eased
                     
-                    pygame.draw.rect(screen, obj.get("color", (255,255,255)), 
+                    pygame.draw.rect(preview_surf, obj.get("color", (255,255,255)), 
                                    (int(cur_x)-obj["size"]//2, int(cur_y)-obj["size"]//2, obj["size"], obj["size"]))
 
                     if blast_count > 0:
-                            cached_draw(str(blast_count), (0,0,0), (int(cur_x), int(cur_y)), True, pygame.font.SysFont("Arial", 14, bold=True))
+                            cached_draw(str(blast_count), (0,0,0), (cur_x, cur_y), True, surface=preview_surf)
                 
                 elif blast_count > 0 and spawn_t + flight_duration < self.current_time <= spawn_t + flight_duration + 1.0:
                     blast_progress = (self.current_time - (spawn_t + flight_duration)) / 1.0 # Parçalar 1 sn uçar
@@ -664,7 +698,7 @@ class LevelEditor:
                         px = obj["target"][0] + math.cos(angle) * dist
                         py = obj["target"][1] + math.sin(angle) * dist
                         # Parçalar daha küçük kareler (size=10)
-                        pygame.draw.rect(screen, obj["color"], (int(px)-5, int(py)-5, 10, 10))
+                        pygame.draw.rect(preview_surf, obj["color"], (int(px)-5, int(py)-5, 10, 10))
 
             else: # BLOCK ÇİZİMİ
                 etime = obj.get("etime", 2.0)
@@ -680,19 +714,27 @@ class LevelEditor:
                         # Hazırlık aşaması: Karartılmış renk ve kalan süre
                         alpha = 0.3
                         r_col = [int(c * alpha) for c in obj["color"]]
-                        pygame.draw.rect(screen, r_col, rect)
+                        pygame.draw.rect(preview_surf, r_col, rect)
                         # Aktifleşmeye kalan süre (Geri sayım)
                         rem_active = adisplay - elapsed
-                        cached_draw(f"{rem_active:.1f}", (255,255,255), rect.center, True, pygame.font.SysFont("Arial", 20, bold=True))
+                        cached_draw(f"{rem_active:.1f}", (255,255,255), rect.center, True, font=..., surface=preview_surf)
                     else:
                         # Aktif aşama: Tam renk ve Sarsıntı (isteğe bağlı)
-                        pygame.draw.rect(screen, obj["color"], rect)
+                        pygame.draw.rect(preview_surf, obj["color"], rect)
+
+
 
         if 0 <= self.selected_idx < len(self.route):
             sel_obj = self.route[self.selected_idx]
             if sel_obj.get("type", "object").lower() == "object":
-                pygame.draw.line(screen, (255, 255, 0), sel_obj["pos"], sel_obj["target"], 1)
-                pygame.draw.circle(screen, (255, 0, 0), sel_obj["target"], 5, 1)
+                pygame.draw.line(preview_surf, (255, 255, 0), sel_obj["pos"], sel_obj["target"], 1)
+                pygame.draw.circle(preview_surf, (255, 0, 0), sel_obj["target"], 5, 1)
+
+        available_w = W - SIDEBAR_W
+        available_h = H - self.timeline_h
+        # Preview'i sidebar hariç kalan alana sığacak şekilde ölçekle
+        scaled_preview = pygame.transform.smoothscale(preview_surf, (available_w, available_h))
+        screen.blit(scaled_preview, (0, 0))
 
         # 2. Properties Paneli (Sağ Panel)
         prop_rect = pygame.Rect(W - SIDEBAR_W, 0, SIDEBAR_W, H)
@@ -748,6 +790,8 @@ class LevelEditor:
         tl_y = H - self.timeline_h
         pygame.draw.rect(screen, (35, 35, 35), (0, tl_y, W - SIDEBAR_W, self.timeline_h))
         start_x = ((W - SIDEBAR_W) // 2) - (self.current_time * self.zoom)
+        timeline_center_x = available_w // 2
+
         
         for s in range(600):
             x = start_x + (s * self.zoom)
@@ -757,15 +801,15 @@ class LevelEditor:
 
         tmp_t = 0
         for i, o in enumerate(self.route):
-            tmp_t += o["duration"]
             ox = start_x + (tmp_t * self.zoom)
-            if 0 < ox < W - SIDEBAR_W:
+            tmp_t += o["duration"]
+            if 0 < ox < available_w:
                 color = (0, 255, 0) if o.get("type") == "object" else (255, 165, 0)
                 if i == self.selected_idx: color = (255, 255, 255)
                 pygame.draw.rect(screen, color, (ox - 4, tl_y + 60, 8, 40))
 
         # Playhead
-        pygame.draw.line(screen, (255, 0, 0), ((W - SIDEBAR_W) // 2, tl_y), ((W - SIDEBAR_W) // 2, H), 3)
+        pygame.draw.line(screen, (255, 0, 0), (timeline_center_x, tl_y), ((W - SIDEBAR_W) // 2, H), 3)
 
 
     
@@ -806,12 +850,24 @@ def get_joy_axis():
 
 text_cache = {}
 GAME_FONT = pygame.font.SysFont(None, 35)
-def cached_draw(text, color, position, center=False, font=GAME_FONT):
-    key = (str(text), color)
-    if key not in text_cache: text_cache[key] = font.render(str(text), True, color).convert_alpha()
+def cached_draw(text, color, position, center=False, font=GAME_FONT, surface=None):
+    # Eğer surface gönderilmemişse varsayılan olarak ana ekranı (screen) kullan
+    if surface is None:
+        surface = screen
+        
+    key = (str(text), color, font) # Fontu da key'e eklemek farklı fontlarda çakışmayı önler
+    if key not in text_cache: 
+        text_cache[key] = font.render(str(text), True, color).convert_alpha()
+    
     surf = text_cache[key]
-    rect = surf.get_rect(center=position if center else (position[0], position[1]))
-    screen.blit(surf, rect)
+    
+    # Position işlemleri
+    if center:
+        rect = surf.get_rect(center=position)
+    else:
+        rect = surf.get_rect(topleft=position)
+        
+    surface.blit(surf, rect)
 
 def draw_gradient_bg(surface, c1, c2, is_vertical):
     w, h = surface.get_size()
@@ -1011,11 +1067,17 @@ async def main():
                 if e.type == pygame.KEYDOWN:
                     # Temel Navigasyon
                     if e.key == pygame.K_ESCAPE: state = "MENU"
-                    if e.key == pygame.K_1: editor.mode = "OBJECT"
-                    if e.key == pygame.K_2: editor.mode = "block"
-                    if e.key == pygame.K_3: editor.mode = "VFX"
+                    if e.key == pygame.K_q: editor.mode = "OBJECT"
+                    if e.key == pygame.K_w: editor.mode = "block"
+                    if e.key == pygame.K_e: editor.mode = "VFX"
                     if e.key == pygame.K_RIGHT: editor.current_time += 0.5
                     if e.key == pygame.K_LEFT: editor.current_time = max(0, editor.current_time - 0.5)
+
+            # Obje Silme (DELETE Tuşu)
+                    if e.key == pygame.K_DELETE:
+                        if 0 <= editor.selected_idx < len(editor.route):
+                            editor.route.pop(editor.selected_idx)
+                            editor.selected_idx = -1 # Seçimi sıfırla
                 # Kopyalama (C tuşu)
                     if e.key == pygame.K_c:
                         if editor.selected_idx != -1:
@@ -1040,8 +1102,14 @@ async def main():
                             editor.add_element(m_pos)
 
                     # Kayıt ve Yükleme
-                    if e.key == pygame.K_s: editor_save(editor.route)
-                    if e.key == pygame.K_l: editor.route = editor_load()
+# Kayıt ve Yükleme (Sadece CTRL + S veya CTRL + L ile)
+                    if e.key == pygame.K_s and (keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]):
+                        editor_save(editor.route)
+                        print("Saved") # Konsolda onay görmek iyidir
+                        
+                    if e.key == pygame.K_l and (keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]):
+                        editor.route = editor_load()
+                        print("Loaded")
 
                     # Seçili Obje Parametrelerini Düzenleme
                     if 0 <= editor.selected_idx < len(editor.route):
@@ -1053,70 +1121,129 @@ async def main():
                         # Özellik Seçme (TAB)
                         if e.key == pygame.K_TAB and p_keys:
                             editor.prop_idx = (editor.prop_idx + 1) % len(p_keys)
+                        elif e.key == pygame.K_RETURN and p_keys:
+                            editor.prop_idx = (editor.prop_idx - 1) % len(p_keys)
 
                         # Değer Artırma/Azaltma (+ / -)
                         change = 0
-                        if e.key in [pygame.K_KP_PLUS, pygame.K_EQUALS]: change = 1
-                        if e.key in [pygame.K_KP_MINUS, pygame.K_MINUS]: change = -1
 
-                        if change != 0 and p_keys:
-# ... mevcut kod ...
-                            if o_type == "vfx":
-                                if key == "bg_r": obj["bg_color"][0] = max(0, min(255, obj["bg_color"][0] + change * 15))
-                                elif key == "bg_g": obj["bg_color"][1] = max(0, min(255, obj["bg_color"][1] + change * 15))
-                                elif key == "bg_b": obj["bg_color"][2] = max(0, min(255, obj["bg_color"][2] + change * 15))
-                                elif key == "p_r": obj["p_color"][0] = max(0, min(255, obj["p_color"][0] + change * 15))
-                                elif key == "p_g": obj["p_color"][1] = max(0, min(255, obj["p_color"][1] + change * 15))
-                                elif key == "p_b": obj["p_color"][2] = max(0, min(255, obj["p_color"][2] + change * 15))
-                                # BURASI ÖNEMLİ: time_duration'ı 'time' anahtarıyla eşle
-                                elif key == "time_duration" or key == "time": 
-                                    obj["time_duration"] = round(max(0.1, obj.get("time_duration", 1.0) + change * 0.1), 1)
-                                elif key == "smooth":
-                                    obj["smooth"] = (change > 0)
+                        # --- SAYI YAZMA VE DÜZENLEME MANTIĞI ---
+                        num_processed = False
+
+                        if e.key in [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, 
+                                    pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9]:
+                            digit = e.unicode
+                            
+                            # 1. Hangi anahtarı ve hangi indeksi güncelleyeceğiz?
+                            target_key = key
+                            list_idx = -1 # -1 ise değer liste değildir
+
+                            # Değerlerin liste içindeki yerlerini eşleyelim
+                            mapping = {
+                                "x": ("pos", 0), "y": ("pos", 1),
+                                "tx": ("target", 0), "ty": ("target", 1),
+                                "size_w": ("size", 0), "size_h": ("size", 1),
+                                "r": ("color", 0), "g": ("color", 1), "b": ("color", 2),
+                                "bg_r": ("bg_color", 0), "bg_g": ("bg_color", 1), "bg_b": ("bg_color", 2),
+                                "p_r": ("p_color", 0), "p_g": ("p_color", 1), "p_b": ("p_color", 2)
+                            }
+
+                            if key in mapping:
+                                target_key, list_idx = mapping[key]
+
+                            # 2. Mevcut Değeri Al
+                            val = obj.get(target_key, 0)
+
+                            # 3. Güncelleme Mantığı
+                            # --- FLOAT DEĞERLER (1.00, 1.50 vb.) ---
+                            if key in ["time", "etime", "adisplay", "duration", "time_duration"]:
+                                # Mevcut float'ı 100 ile çarpıp tam sayı yap (1.5 -> 150)
+                                current_int_val = int(round(val * 100))
+                                # Yeni rakamı sona ekle (150 + '0' -> 1500)
+                                new_str = str(current_int_val) + digit if current_int_val != 0 else digit
+                                # Tekrar float'a çevir (1500 -> 15.00)
+                                obj[target_key] = round(float(new_str) / 100.0, 2)
+
+                            # --- LİSTE DEĞERLERİ (RGB, X, Y, SIZE) ---
+                            elif list_idx != -1:
+                                if isinstance(val, list):
+                                    current_str = str(int(val[list_idx]))
+                                    new_val = int(current_str + digit) if current_str != "0" else int(digit)
+                                    # Renkler için 255 sınırı
+                                    if "color" in target_key: new_val = max(0, min(255, new_val))
+                                    val[list_idx] = new_val
+                                else:
+                                    # Eğer değer liste değilse (örn size: 33), onu listeye çevir veya direkt güncelle
+                                    if "size" in target_key: obj[target_key] = int(str(val) + digit)
+
+                            # --- DİĞER TAM SAYILAR (blast vb.) ---
                             else:
-                                key = p_keys[editor.prop_idx]
-                                if key == "x": obj["pos"][0] += change * 10
-                                elif key == "y": obj["pos"][1] += change * 10
-                                elif key == "tx": obj["target"][0] += change * 10
-                                elif key == "ty": obj["target"][1] += change * 10
-                                elif key == "size": obj["size"] += change * 5
-                                elif key == "size_w": obj["size"][0] = max(10, obj["size"][0] + change * 10)
-                                elif key == "size_h": obj["size"][1] = max(10, obj["size"][1] + change * 10)
-                                elif key == "r": obj["color"][0] = max(0, min(255, obj["color"][0] + change * 15))
-                                elif key == "g": obj["color"][1] = max(0, min(255, obj["color"][1] + change * 15))
-                                elif key == "b": obj["color"][2] = max(0, min(255, obj["color"][2] + change * 15))
-                                elif key in ["time", "etime", "adisplay"]:
-                                    obj[key] = round(max(0.1, obj[key] + change * 0.1), 1)
-                                elif key == "blast":
-                                    obj[key] = max(0, obj[key] + change)
+                                current_str = str(int(val))
+                                obj[target_key] = int(current_str + digit) if current_str != "0" else int(digit)
 
-                        # Silme (Delete/Backspace)
-                        if e.key in [pygame.K_DELETE, pygame.K_BACKSPACE]:
-                            editor.route.pop(editor.selected_idx)
-                            editor.selected_idx = -1
+                            num_processed = True
+
+                        # 2. Rakam Silme (Backspace)
+                        if e.key == pygame.K_BACKSPACE and not keys[pygame.K_LCTRL]:
+                            target_key = key
+                            list_idx = -1
+                            mapping = {
+                                "x": ("pos", 0), "y": ("pos", 1), "tx": ("target", 0), "ty": ("target", 1),
+                                "size_w": ("size", 0), "size_h": ("size", 1), "r": ("color", 0), "g": ("color", 1), "b": ("color", 2),
+                                "bg_r": ("bg_color", 0), "bg_g": ("bg_color", 1), "bg_b": ("bg_color", 2), "p_r": ("p_color", 0), "p_g": ("p_color", 1), "p_b": ("p_color", 2)
+                            }
+                            if key in mapping: target_key, list_idx = mapping[key]
+                            
+                            val = obj.get(target_key, 0)
+                            if key in ["time", "etime", "adisplay", "duration", "time_duration"]:
+                                current_int_str = str(int(round(val * 100)))
+                                new_str = current_int_str[:-1] if len(current_int_str) > 1 else "0"
+                                obj[target_key] = round(float(new_str) / 100.0, 2)
+                            elif list_idx != -1 and isinstance(val, list):
+                                s = str(int(val[list_idx]))
+                                val[list_idx] = int(s[:-1]) if len(s) > 1 else 0
+                            else:
+                                s = str(int(val))
+                                obj[target_key] = int(s[:-1]) if len(s) > 1 else 0
+                            num_processed = True
 
                 elif e.type == pygame.MOUSEBUTTONDOWN:
+                    mx, my = e.pos
                     keys = pygame.key.get_pressed()
+                    
+                    # Editörün o anki panel ölçülerini al
+                    available_w = W - SIDEBAR_W
+                    available_h = H - editor.timeline_h # Timeline yüksekliği
+                    
+                    # Kaydırma hızı (Shift ile 0.1s, normalde 1.0s)
                     step = 0.1 if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT] else 1.0
-                    
-                    if e.button == 1: # Sol Tık
-                        if e.pos[0] < W - SIDEBAR_W:
-                            # 1. Önce tıklanan yerde bir obje var mı diye bak (Seçim yap)
-                            found = editor.select_at(e.pos)
-                    
-                                
-                    elif e.button == 3: # Sağ Tık: Hedef Belirleme
-                        editor.set_target_at(e.pos)
-                    
-                    # ... (tekerlek kontrolleri aynı kalıyor)
 
-                    elif e.button == 4: # Tekerlek yukarı (Geri git)
+                    # 1. DURUM: Tıklama OYUN (PREVIEW) ALANI içinde mi?
+                    if mx < available_w and my < available_h:
+                        # Ekranda gördüğün sıkışmış koordinatı, gerçek 1280x720 (W, H) koordinatına çevir
+                        # Formül: (Tıklanan X / Görünen Genişlik) * Gerçek Genişlik
+                        real_x = int((mx / available_w) * W)
+                        real_y = int((my / available_h) * H)
+                        real_pos = (real_x, real_y)
+
+                        if e.button == 1: # Sol Tık: Obje Seçme
+                            editor.select_at(real_pos)
+                        
+                        elif e.button == 3: # Sağ Tık: Hedef Belirleme
+                            editor.set_target_at(real_pos)
+
+                    # 2. DURUM: Tıklama TIMELINE alanı içinde mi?
+                    elif mx < available_w and my >= available_h:
+                        # İsteğe bağlı: Buraya tıklayınca o saniyeye atlama kodu eklenebilir
+                        pass
+
+                    # 3. DURUM: MOUSE TEKERLEĞİ (Zamanı ileri-geri sarma)
+                    if e.button == 4: # Tekerlek Yukarı (Geri git)
                         editor.current_time = max(0, editor.current_time - step)
-                        # Eğer müzik çalıyorsa müziği de senkronize et (İsteğe bağlı ama önerilir)
                         if editor.playing:
                             pygame.mixer.music.play(start=editor.current_time)
                             
-                    elif e.button == 5: # Tekerlek aşağı (İleri git)
+                    elif e.button == 5: # Tekerlek Aşağı (İleri git)
                         editor.current_time += step
                         if editor.playing:
                             pygame.mixer.music.play(start=editor.current_time)
@@ -1137,7 +1264,7 @@ async def main():
                     song_list = list(SONGS.keys())
                     for i, song_path in enumerate(song_list):
                         rect = pygame.Rect(0, 0, 400, 40)
-                        rect.center = (W//2, H//2 + (i * 50))
+                        rect.center = (W//2, H//3 + (i * 50))
                         if rect.collidepoint(m_pos):
                             current_song_path = song_path
 
@@ -1215,44 +1342,67 @@ async def main():
                 else:
                     music_time += dt
 
-            # --- SPAWN MANTIĞI ---
+# --- SPAWN MANTIĞI ---
             while route_index < len(route) and music_time >= spawn_times[route_index]:
                 d = route[route_index]
                 st = spawn_times[route_index]
                 o_type = d.get("type", "object").lower()
 
-                if o_type == "vfx":
-                    current_vfx_start_time = music_time
-                    current_vfx_duration = d.get("time_duration", 1.0)
-                    target_bg = list(d["bg_color"])
-                    target_player = list(d["p_color"])
-                    is_vfx_smooth = d.get("smooth", True)
-                    
-                    # Eğer smooth değilse anında eşitle
-                    if not is_vfx_smooth:
-                        bg_color_1 = list(target_bg)
-                        player_color = list(target_player)
-                elif o_type == "block":
+                # VFX'leri spawnlamıyoruz çünkü renkleri aşağıda mutlak zamana göre hesaplayacağız!
+                if o_type == "block":
                     objects.append(Block(tuple(d["pos"]), tuple(d["size"]), tuple(d["color"]), st, d["etime"], d["adisplay"]))
                 elif o_type == "object":
                     objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], st, blast=d.get("blast", 0), effect=d.get("effect")))
                 
                 route_index += 1
 
-            # --- GÖRSEL GEÇİŞLER (Sadece 1 saniye bekleme bittiyse başlar) ---
-            if start_timer <= 0:
-                # current_vfx_start_time tanımlanmamışsa hata vermemesi için basit bir try-except veya mantık kontrolü:
-                if 'current_vfx_start_time' in locals() and is_vfx_smooth and music_time < (current_vfx_start_time + current_vfx_duration):
-                    rem_time = (current_vfx_start_time + current_vfx_duration) - music_time
-                    if rem_time > 0:
-                        step = dt / rem_time
-                        for i in range(3):
-                            bg_color_1[i] += (target_bg[i] - bg_color_1[i]) * min(1.0, step)
-                            player_color[i] += (target_player[i] - player_color[i]) * min(1.0, step)
-                elif 'target_bg' in locals():
-                    # Süre dolduysa tam hedefe sabitle (EKRANI SİYAH YAPAN HATA BURADAYDI)
-                    bg_color_1 = list(target_bg)
-                    player_color = list(target_player)
+            # --- GÖRSEL GEÇİŞLER (EDİTÖR İLE %100 AYNI MANTIK) ---
+            temp_bg = [15, 15, 15]
+            temp_p = [0, 255, 255]
+
+            vfx_list = [o for o in route if o.get("type", "").lower() == "vfx"]
+            for v in vfx_list:
+                if v.get("time") == "N/A" or v.get("time") is None:
+                    v["time"] = 0.0
+
+            vfx_list.sort(key=lambda x: float(x.get("time", 0)))
+
+            for v in vfx_list:
+                v_start = float(v.get("time", 0))
+                
+                # Oyunun müzik süresi bu VFX'e gelmediyse dur
+                if music_time < v_start:
+                    break 
+
+                v_dur = float(v.get("time_duration", 1.0))
+                target_bg = v.get("bg_color", [0, 0, 0])
+                target_p = v.get("p_color", [0, 255, 255])
+                
+                is_smooth = v.get("smooth", False)
+                if is_smooth in [1, "1", True, "True"]:
+                    is_smooth = True
+                else:
+                    is_smooth = False
+
+                # GEÇİŞ AŞAMASI
+                if is_smooth and v_dur > 0 and music_time < (v_start + v_dur):
+                    progress = (music_time - v_start) / v_dur
+                    for c in range(3):
+                        temp_bg[c] += (target_bg[c] - temp_bg[c]) * progress
+                        temp_p[c] += (target_p[c] - temp_p[c]) * progress
+                    break
+                
+                # SABİTLEME AŞAMASI
+                else:
+                    temp_bg = list(target_bg)
+                    temp_p = list(target_p)
+
+            # Hesaplanan kusursuz renkleri oyuna aktar
+            bg_color_1 = temp_bg
+            player_color = temp_p
+            
+            # --- HAREKET VE ÇARPIŞMA KONTROLLERİ ---
+            # (Buradan sonrası player.move(dt...) diye aynı şekilde devam ediyor)
 
             # --- HAREKET VE ÇARPIŞMA KONTROLLERİ ---
             player.move(dt, keys, get_joy_axis())
