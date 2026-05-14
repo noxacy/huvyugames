@@ -1,84 +1,24 @@
 {
     "route": [
         {
-            "type": "object",
+            "type": "vfx",
             "pos": [
-                233,
-                334
+                657,
+                249
             ],
-            "target": [
-                333,
-                334
+            "duration": 0,
+            "time_duration": 1.5,
+            "bg_color": [
+                60,
+                0,
+                0
             ],
-            "time": 1.0,
-            "easing": "ease-out",
-            "color": [
-                195,
+            "p_color": [
+                0,
                 255,
                 255
             ],
-            "size": 30,
-            "blast": 0,
-            "duration": 0
-        },
-        {
-            "type": "object",
-            "pos": [
-                674,
-                160
-            ],
-            "target": [
-                774,
-                160
-            ],
-            "time": 1.5,
-            "easing": "ease-out",
-            "color": [
-                255,
-                255,
-                255
-            ],
-            "size": 15,
-            "blast": 0,
-            "duration": 0
-        },
-        {
-            "type": "block",
-            "pos": [
-                449,
-                299
-            ],
-            "size": [
-                100,
-                100
-            ],
-            "color": [
-                255,
-                165,
-                255
-            ],
-            "etime": 2.0,
-            "adisplay": 1.0,
-            "duration": 0
-        },
-        {
-            "type": "block",
-            "pos": [
-                764,
-                299
-            ],
-            "size": [
-                100,
-                100
-            ],
-            "color": [
-                255,
-                255,
-                255
-            ],
-            "etime": 2.0,
-            "adisplay": 1.0,
-            "duration": 0
+            "smooth": true
         }
     ]
 }

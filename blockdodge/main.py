@@ -1146,9 +1146,9 @@ async def main():
                     if BTN_ZEN.collidepoint(m_pos): is_zen = not is_zen
                     
                     if BTN_FAST.collidepoint(m_pos):
-                        time_scale = 1.5 if time_scale == 1.0 else 1.0
+                        time_scale = 1.25 if time_scale == 1.0 else 1.0
                     if BTN_SLOW.collidepoint(m_pos):
-                        time_scale = 0.5 if time_scale == 1.0 else 1.0
+                        time_scale = 0.75 if time_scale == 1.0 else 1.0
                     
                     # Custom JSON Alanı
                     if BTN_CUSTOM.collidepoint(m_pos): input_active = True
@@ -1211,17 +1211,9 @@ async def main():
                 # Müzik çalarken süreyi Mixer'dan al
                 m_pos = pygame.mixer.music.get_pos()
                 if m_pos != -1:
-                    # music_time = (miliSaniye / 1000) + Müziğin başladığı saniye
                     music_time = (m_pos / 1000.0) + SKIP_TIME
                 else:
-                    # Müzik bittiyse veya özel rotaysa dt kullan
                     music_time += dt
-
-            # Renk Easing (Hatanın oluştuğu liste güncellemeleri)
-            lerp_speed = 0.05 
-            for i in range(3):
-                bg_color_1[i] += (target_bg[i] - bg_color_1[i]) * lerp_speed
-                player_color[i] += (target_player[i] - player_color[i]) * lerp_speed
 
             # --- SPAWN MANTIĞI ---
             while route_index < len(route) and music_time >= spawn_times[route_index]:
@@ -1245,33 +1237,24 @@ async def main():
                 elif o_type == "object":
                     objects.append(Object(d["pos"], d["target"], d["easing"], d["color"], d["size"], d["time"], st, blast=d.get("blast", 0), effect=d.get("effect")))
                 
-                
-                # 2. VFX (Görsel Değişiklikler)
-                elif o_type == "vfx":
-                    if "bg_color" in d: target_bg = list(d["bg_color"])
-                    if "p_color" in d: target_player = list(d["p_color"])
-                    
-                    # OYUN İÇİNDE DE EASING KAPALIYSA ANINDA DEĞİŞTİR
-                    if not d.get("smooth", True):
-                        bg_color_1 = list(target_bg)
-                        player_color = list(target_player)
                 route_index += 1
 
-            if is_vfx_smooth and music_time < (current_vfx_start_time + current_vfx_duration):
-                elapsed = music_time - current_vfx_start_time
-                # Kalan sürede ne kadar yaklaşması gerektiğini bul (Dinamik Lerp)
-                # dt / kalan_süre mantığıyla tam TIME süresinde hedefe varır
-                rem_time = (current_vfx_start_time + current_vfx_duration) - music_time
-                if rem_time > 0:
-                    step = dt / rem_time
-                    for i in range(3):
-                        bg_color_1[i] += (target_bg[i] - bg_color_1[i]) * min(1.0, step)
-                        player_color[i] += (target_player[i] - player_color[i]) * min(1.0, step)
-            else:
-                # Süre dolduysa tam hedefe sabitle
-                bg_color_1 = list(vfx_target_bg)
-                player_color = list(vfx_target_p)
+            # --- GÖRSEL GEÇİŞLER (Sadece 1 saniye bekleme bittiyse başlar) ---
+            if start_timer <= 0:
+                # current_vfx_start_time tanımlanmamışsa hata vermemesi için basit bir try-except veya mantık kontrolü:
+                if 'current_vfx_start_time' in locals() and is_vfx_smooth and music_time < (current_vfx_start_time + current_vfx_duration):
+                    rem_time = (current_vfx_start_time + current_vfx_duration) - music_time
+                    if rem_time > 0:
+                        step = dt / rem_time
+                        for i in range(3):
+                            bg_color_1[i] += (target_bg[i] - bg_color_1[i]) * min(1.0, step)
+                            player_color[i] += (target_player[i] - player_color[i]) * min(1.0, step)
+                elif 'target_bg' in locals():
+                    # Süre dolduysa tam hedefe sabitle (EKRANI SİYAH YAPAN HATA BURADAYDI)
+                    bg_color_1 = list(target_bg)
+                    player_color = list(target_player)
 
+            # --- HAREKET VE ÇARPIŞMA KONTROLLERİ ---
             player.move(dt, keys, get_joy_axis())
             for obj in objects[:]:
                 if isinstance(obj, Object):
@@ -1287,7 +1270,7 @@ async def main():
             if dmgcd > 0: dmgcd -= dt
             if damage_flash > 0: damage_flash -= dt * 2
             if shake_amount > 0: shake_amount -= 40 * (raw_ms / 1000.0)
-            # main() döngüsü içindeki eski draw satırını bununla değiştir:
+            
             draw(
                 objects, 
                 player, 
@@ -1295,11 +1278,11 @@ async def main():
                 show_joystick, 
                 joy_pos, 
                 music_time, 
-                bg_color_1,     # bg1: Arkaplan rengi (Siyahımsı)
+                bg_color_1,     # bg1: Arkaplan rengi
                 (50, 50, 50),  # bg2: Gradyan için ikinci renk
-                False,         # is_grad: Gradyan aktif mi? (Şimdilik False)
-                0,             # angle: Gradyan yönü (0: Yatay, 1: Dikey)
-                player_color, # p_col: Oyuncu rengi (Turkuaz)
+                False,         # is_grad: Gradyan aktif mi?
+                0,             # angle: Gradyan yönü
+                player_color, # p_col: Oyuncu rengi
                 shake_amount, 
                 damage_flash
             )
@@ -1317,6 +1300,11 @@ async def main():
         elif state == "MENU":
             start_timer = 1
             music_time = 0
+            bg_color_1 = [0, 0, 0]
+            bg_color_2 = [0, 0, 0]
+            is_gradient_active = False
+            bg_angle = 0
+            player_color = [255, 255, 255]
             draw_menu()
             pygame.display.flip()
 
@@ -1333,7 +1321,8 @@ async def main():
 
         if state == "WIN_SCREEN":
             # Win ekranında oyuncu bir tuşa basana kadar bekleyebilir
-            pass
+            save_score(current_song_path, progress_percent)
+            state == "MENU"
 
     # main içindeki EDITOR durumunda:
     # --- main() EN ALT KISIMDAKİ EDİTÖR DÖNGÜSÜ ---
