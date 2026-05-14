@@ -1,0 +1,84 @@
+{
+    "route": [
+        {
+            "type": "object",
+            "pos": [
+                233,
+                334
+            ],
+            "target": [
+                333,
+                334
+            ],
+            "time": 1.0,
+            "easing": "ease-out",
+            "color": [
+                195,
+                255,
+                255
+            ],
+            "size": 30,
+            "blast": 0,
+            "duration": 0
+        },
+        {
+            "type": "object",
+            "pos": [
+                674,
+                160
+            ],
+            "target": [
+                774,
+                160
+            ],
+            "time": 1.5,
+            "easing": "ease-out",
+            "color": [
+                255,
+                255,
+                255
+            ],
+            "size": 15,
+            "blast": 0,
+            "duration": 0
+        },
+        {
+            "type": "block",
+            "pos": [
+                449,
+                299
+            ],
+            "size": [
+                100,
+                100
+            ],
+            "color": [
+                255,
+                165,
+                255
+            ],
+            "etime": 2.0,
+            "adisplay": 1.0,
+            "duration": 0
+        },
+        {
+            "type": "block",
+            "pos": [
+                764,
+                299
+            ],
+            "size": [
+                100,
+                100
+            ],
+            "color": [
+                255,
+                255,
+                255
+            ],
+            "etime": 2.0,
+            "adisplay": 1.0,
+            "duration": 0
+        }
+    ]
+}
