@@ -200,7 +200,7 @@ def draw_overlay(title, subtitle, color="#ffffff"):
 
 def draw_menu():
     screen.fill("#050505")
-    cached_draw("BLOCKDODGE v0.2", "#ffffff", (W/2, H/3 - 180), True)
+    cached_draw("BeatInertia v0.2", "#ffffff", (W/2, H/3 - 180), True)
 
     current_suffix = get_mode_suffix() 
 
@@ -485,10 +485,16 @@ class LevelEditor:
 
         new_obj = {
             "type": obj_type,
-            "pos": [int((pos[0]/(W-SIDEBAR_W))*W), int((pos[1]/(H-self.timeline_h))*H)],
+            "pos": [
+                int((pos[0] / (W - SIDEBAR_W)) * W),
+                int((pos[1] / (H - self.timeline_h)) * H)
+            ],
             "duration": 0.0
         }
 
+        # ---------------------------------------------------
+        # DEFAULT DEĞERLER
+        # ---------------------------------------------------
         if obj_type == "object":
             new_obj.update({
                 "target": [new_obj["pos"][0] + 100, new_obj["pos"][1]],
@@ -511,20 +517,63 @@ class LevelEditor:
                 "time": click_time,
                 "time_duration": 1.0,
                 "bg_color": [0,0,0],
-                "p_color": [255,255,255]
+                "p_color": [255,255,255],
+                "smooth": False
             })
+
+        # ---------------------------------------------------
+        # SEÇİLİ OBJEDEN SADECE BELİRLİ ÖZELLİKLERİ KOPYALA
+        # ---------------------------------------------------
+        if 0 <= self.selected_idx < len(self.route):
+
+            sel = self.route[self.selected_idx]
+
+            if sel.get("type", "").lower() == obj_type.lower():
+
+                # OBJECT
+                if obj_type == "object":
+
+                    new_obj.update({
+                        "size": sel.get("size", 33),
+                        "color": list(sel.get("color", [255,255,255])),
+                        "blast": sel.get("blast", 12),
+                        "time": sel.get("time", 0.45)
+                    })
+
+                # BLOCK
+                elif obj_type == "block":
+
+                    new_obj.update({
+                        "size": list(sel.get("size", [100,100])),
+                        "color": list(sel.get("color", [255,255,255])),
+                        "etime": sel.get("etime", 2.0),
+                        "adisplay": sel.get("adisplay", 1.0)
+                    })
+
+                # VFX
+                elif obj_type == "vfx":
+
+                    new_obj.update({
+                        "time_duration": sel.get("time_duration", 1.0),
+                        "bg_color": list(sel.get("bg_color", [0,0,0])),
+                        "p_color": list(sel.get("p_color", [255,255,255])),
+                        "smooth": sel.get("smooth", False)
+                    })
+
+        # ---------------------------------------------------
+        # VFX DIRECT ADD
+        # ---------------------------------------------------
+        if obj_type == "vfx":
             self.route.append(new_obj)
             self.selected_idx = self.route.index(new_obj)
             return
 
         # ---------------------------------------------------
-        # YENİ MANTIK
+        # PLAYABLE OBJELER
         # ---------------------------------------------------
-
-        # Sadece object/block'ları al
         playable = [o for o in self.route if o.get("type") != "vfx"]
 
-        # Hiç obje yoksa
+        # İlk obje
         if not playable:
             new_obj["duration"] = 0.0
             self.route.append(new_obj)
@@ -534,8 +583,11 @@ class LevelEditor:
         total = 0.0
         insert_after = -1
 
-        # Duration toplamını current_time'dan büyük olana kadar topla
+        # ---------------------------------------------------
+        # INSERT NOKTASI BUL
+        # ---------------------------------------------------
         for i, obj in enumerate(self.route):
+
             if obj.get("type") == "vfx":
                 continue
 
@@ -545,43 +597,43 @@ class LevelEditor:
                 insert_after = i
                 break
 
-        # Eğer hiçbir yerde büyük olmadıysa sona ekle
+        # ---------------------------------------------------
+        # SONA EKLE
+        # ---------------------------------------------------
         if insert_after == -1:
-            last_non_vfx = -1
 
+            last_non_vfx = -1
             total = 0.0
+
             for i, obj in enumerate(self.route):
+
                 if obj.get("type") != "vfx":
                     total += obj.get("duration", 0.0)
                     last_non_vfx = i
 
-            # Son duration = yeni objeye kadar olan fark
             self.route[last_non_vfx]["duration"] += round(click_time - total, 3)
 
             new_obj["duration"] = 0.0
+
             self.route.append(new_obj)
 
             self.selected_idx = self.route.index(new_obj)
+
             return
 
         # ---------------------------------------------------
-        # Bir adım geri git
+        # ARAYA EKLE
         # ---------------------------------------------------
-
         prev_total = total - self.route[insert_after]["duration"]
 
-        # Editör zamanı ile önceki toplam arasındaki fark
         diff = round(click_time - prev_total, 3)
 
         old_duration = self.route[insert_after]["duration"]
 
-        # Mevcut objenin durationını böl
         self.route[insert_after]["duration"] = diff
 
-        # Yeni objeye kalan süreyi ver
         new_obj["duration"] = round(old_duration - diff, 3)
 
-        # Araya ekle
         self.route.insert(insert_after + 1, new_obj)
 
         self.selected_idx = self.route.index(new_obj)
@@ -730,7 +782,10 @@ class LevelEditor:
                 
                 # 1. Uçuş Aşaması
                 if spawn_t <= self.current_time <= spawn_t + flight_duration:
-                    progress = (self.current_time - spawn_t) / flight_duration
+                    try:
+                        progress = (self.current_time - spawn_t) / flight_duration
+                    except ZeroDivisionError:
+                        pass
                     prog_eased = 1 - (1 - progress) ** 3
                     cur_x = obj["pos"][0] + (obj["target"][0] - obj["pos"][0]) * prog_eased
                     cur_y = obj["pos"][1] + (obj["target"][1] - obj["pos"][1]) * prog_eased
@@ -1098,11 +1153,12 @@ async def main():
         # Tüm tuş ve fare kontrolleri bu döngünün İÇİNDE olmalı
 # --- 1. OLAY (EVENT) DÖNGÜSÜ ---
         for e in events:
-
+            if e.type == pygame.QUIT:
+                running = False
             # -------------------------------------------------
             # FINGERDOWN
             # -------------------------------------------------
-            if e.type == pygame.FINGERDOWN:
+            elif e.type == pygame.FINGERDOWN:
                 tx, ty = e.x * W, e.y * H
                 m_pos = (tx, ty)
 

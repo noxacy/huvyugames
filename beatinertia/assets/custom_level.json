@@ -1,0 +1,566 @@
+{
+    "route": [
+        {
+            "type": "object",
+            "pos": [
+                180,
+                360
+            ],
+            "duration": 0.0,
+            "time": 0.9,
+            "size": 35,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "target": [
+                640,
+                180
+            ],
+            "blast": 48,
+            "easing": "ease-out",
+            "x": 0,
+            "abs_spawn_time": 0,
+            "abs_time": 0
+        },
+        {
+            "type": "vfx",
+            "pos": [
+                71,
+                35
+            ],
+            "duration": 0,
+            "time_duration": 1.0,
+            "bg_color": [
+                190,
+                210,
+                210
+            ],
+            "p_color": [
+                170,
+                50,
+                75
+            ],
+            "smooth": 0,
+            "time": 0.0,
+            "abs_spawn_time": 0.0,
+            "abs_time": 0.0
+        },
+        {
+            "type": "object",
+            "pos": [
+                1100,
+                360
+            ],
+            "duration": 0.0,
+            "time": 0.9,
+            "size": 35,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "target": [
+                640,
+                540
+            ],
+            "blast": 48,
+            "easing": "ease-out",
+            "abs_spawn_time": 0,
+            "abs_time": 0
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                180
+            ],
+            "abs_spawn_time": 0,
+            "time": 0.9,
+            "size": 35,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "target": [
+                1100,
+                360
+            ],
+            "blast": 48,
+            "easing": "ease-out",
+            "duration": 0.0,
+            "abs_time": 0
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                540
+            ],
+            "abs_spawn_time": 0,
+            "time": 0.9,
+            "size": 35,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "target": [
+                180,
+                360
+            ],
+            "blast": 48,
+            "easing": "ease-out",
+            "duration": 0.0,
+            "abs_time": 0
+        },
+        {
+            "type": "vfx",
+            "pos": [
+                88,
+                122
+            ],
+            "duration": 0.9,
+            "time": 0.9,
+            "time_duration": 1.0,
+            "bg_color": [
+                255,
+                255,
+                255
+            ],
+            "p_color": [
+                170,
+                50,
+                75
+            ],
+            "smooth": 0,
+            "abs_spawn_time": 0.9,
+            "abs_time": 0.9
+        },
+        {
+            "type": "vfx",
+            "pos": [
+                80,
+                200
+            ],
+            "duration": 0.9,
+            "time": 0.9,
+            "time_duration": 0.5,
+            "bg_color": [
+                190,
+                210,
+                210
+            ],
+            "p_color": [
+                170,
+                50,
+                75
+            ],
+            "smooth": true,
+            "abs_spawn_time": 0.9,
+            "abs_time": 0.9
+        },
+        {
+            "type": "vfx",
+            "pos": [
+                70,
+                184
+            ],
+            "abs_time": 2.7000000000000006,
+            "time": 2.7000000000000006,
+            "time_duration": 1.0,
+            "bg_color": [
+                255,
+                255,
+                255
+            ],
+            "p_color": [
+                170,
+                50,
+                75
+            ],
+            "smooth": 0,
+            "duration": 0.9
+        },
+        {
+            "type": "vfx",
+            "pos": [
+                57,
+                264
+            ],
+            "abs_time": 2.7000000000000006,
+            "time": 2.7000000000000006,
+            "time_duration": 0.5,
+            "bg_color": [
+                190,
+                210,
+                210
+            ],
+            "p_color": [
+                170,
+                50,
+                75
+            ],
+            "smooth": true,
+            "duration": 0.9
+        },
+        {
+            "type": "block",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 1.8,
+            "size": [
+                600,
+                250
+            ],
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "etime": 1.8,
+            "adisplay": 0.9
+        },
+        {
+            "type": "block",
+            "pos": [
+                150,
+                150
+            ],
+            "duration": 0.0,
+            "size": [
+                200,
+                200
+            ],
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "etime": 1.8,
+            "adisplay": 0.9
+        },
+        {
+            "type": "block",
+            "pos": [
+                1130,
+                150
+            ],
+            "duration": 0.0,
+            "size": [
+                200,
+                200
+            ],
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "etime": 1.8,
+            "adisplay": 0.9
+        },
+        {
+            "type": "block",
+            "pos": [
+                1130,
+                570
+            ],
+            "duration": 0.0,
+            "size": [
+                200,
+                200
+            ],
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "etime": 1.8,
+            "adisplay": 0.9
+        },
+        {
+            "type": "block",
+            "pos": [
+                150,
+                570
+            ],
+            "duration": 0.0,
+            "size": [
+                200,
+                200
+            ],
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "etime": 1.8,
+            "adisplay": 0.9
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                0
+            ],
+            "duration": 1.9,
+            "target": [
+                640,
+                360
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                0,
+                0
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                1280,
+                0
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                1280,
+                720
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                0,
+                720
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                640,
+                0
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                1280,
+                360
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                640,
+                720
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "object",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 0.0,
+            "target": [
+                0,
+                360
+            ],
+            "time": 0.9,
+            "size": 50,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 36
+        },
+        {
+            "type": "block",
+            "pos": [
+                640,
+                360
+            ],
+            "duration": 1.9000000000000001,
+            "size": [
+                200,
+                200
+            ],
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "etime": 1.8,
+            "adisplay": 0.9
+        },
+        {
+            "type": "vfx",
+            "pos": [
+                88,
+                210
+            ],
+            "duration": 0.0,
+            "time": 4.599999999999998,
+            "time_duration": 1.0,
+            "bg_color": [
+                255,
+                255,
+                255
+            ],
+            "p_color": [
+                170,
+                50,
+                75
+            ],
+            "smooth": 0
+        },
+        {
+            "type": "vfx",
+            "pos": [
+                84,
+                280
+            ],
+            "duration": 0.0,
+            "time": 4.599999999999998,
+            "time_duration": 1.0,
+            "bg_color": [
+                190,
+                210,
+                210
+            ],
+            "p_color": [
+                170,
+                50,
+                75
+            ],
+            "smooth": 1
+        },
+        {
+            "type": "object",
+            "pos": [
+                506,
+                204
+            ],
+            "duration": 0.0,
+            "target": [
+                841,
+                212
+            ],
+            "time": 0.9,
+            "size": 35,
+            "color": [
+                50,
+                50,
+                50
+            ],
+            "blast": 48
+        }
+    ]
+}
