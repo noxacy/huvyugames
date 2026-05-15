@@ -65,7 +65,7 @@ screen = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 running = True
 pressed_keys = []
-pygame.display.set_caption("Blockdodge v1.0")
+pygame.display.set_caption("Blockdodge v0.2")
 input_active = False
 input_text = ""
 BTN_CUSTOM = pygame.Rect(W/2 - 150, H/2 + 150, 300, 50)
@@ -200,7 +200,7 @@ def draw_overlay(title, subtitle, color="#ffffff"):
 
 def draw_menu():
     screen.fill("#050505")
-    cached_draw("BLOCKDODGE v1.5", "#ffffff", (W/2, H/3 - 180), True)
+    cached_draw("BLOCKDODGE v0.2", "#ffffff", (W/2, H/3 - 180), True)
 
     current_suffix = get_mode_suffix() 
 
@@ -1073,6 +1073,8 @@ async def main():
     global running, hp, dmgcd, objects, state, current_song_path, route, TOTAL_TIME, is_mobile, game_mode, time_scale, is_1hp, is_zen, input_active, input_text, custom_route, pygame, shake_amount, joy_pos, show_joystick, is_touching, bg_color_1, player_color,start_timer ,target_bg,target_player,restart_timer,is_vfx_smooth, vfx_start_time, vfx_total_duration
     
     screen = pygame.display.set_mode((1280, 720))
+    touch_id = None
+    menu_touch_id = None
     player = Player(W//2, H//2, 25)
     route_index, music_time = 0, 0
     damage_flash = 0
@@ -1096,42 +1098,108 @@ async def main():
         # Tüm tuş ve fare kontrolleri bu döngünün İÇİNDE olmalı
 # --- 1. OLAY (EVENT) DÖNGÜSÜ ---
         for e in events:
-            # --- MOBİL DOKUNMATİK KONTROLÜ ---
+
+            # -------------------------------------------------
+            # FINGERDOWN
+            # -------------------------------------------------
             if e.type == pygame.FINGERDOWN:
-                is_touching = True
-                show_joystick = True
-                tx, ty = e.x * W, e.y * H # Parmak koordinatını ekrana çevir
-                
-                # Eğer MENÜDEYSEK buton tıklamalarını kontrol et
+                tx, ty = e.x * W, e.y * H
+                m_pos = (tx, ty)
+
+                # ---------------- MENU ----------------
                 if state == "MENU":
-                    m_pos = (tx, ty)
-                    if BTN_START.collidepoint(m_pos): start_trigger = True
-                    if BTN_1HP.collidepoint(m_pos): is_1hp = not is_1hp
-                    if BTN_ZEN.collidepoint(m_pos): is_zen = not is_zen
-                    if BTN_CUSTOM.collidepoint(m_pos): input_active = True
-                    
-                    # Seviye seçimi için dokunma kontrolü
+
+                    # Menü butonları HER YERDEN çalışsın
+                    if BTN_START.collidepoint(m_pos):
+                        start_trigger = True
+                        continue
+
+                    if BTN_1HP.collidepoint(m_pos):
+                        is_1hp = not is_1hp
+                        continue
+
+                    if BTN_ZEN.collidepoint(m_pos):
+                        is_zen = not is_zen
+                        continue
+
+                    if BTN_FAST.collidepoint(m_pos):
+                        time_scale = 1.25 if time_scale == 1.0 else 1.0
+                        continue
+
+                    if BTN_SLOW.collidepoint(m_pos):
+                        time_scale = 0.75 if time_scale == 1.0 else 1.0
+                        continue
+
+                    if BTN_CUSTOM.collidepoint(m_pos):
+                        input_active = True
+                        continue
+
+                    # Şarkı seçimi
                     song_list = list(SONGS.keys())
                     for i, song_path in enumerate(song_list):
                         rect = pygame.Rect(0, 0, 400, 40)
                         rect.center = (W//2, H//3 + (i * 50))
+
                         if rect.collidepoint(m_pos):
                             current_song_path = song_path
-                
-                # Joystick kontrolü (Ekranın sol tarafı)
-                if tx < W / 2:
-                    dx, dy = tx - JOY_CENTER[0], ty - JOY_CENTER[1]
-                    if math.hypot(dx, dy) <= JOY_RADIUS:
+                            break
+
+                # ---------------- GAME ----------------
+                elif state == "GAME":
+
+                    # Sol taraf joystick
+                    if tx < W * 0.45 and touch_id is None:
+                        touch_id = e.finger_id
+
+                        show_joystick = True
+                        is_touching = True
+
                         joy_pos = [tx, ty]
 
-            # (FINGERMOTION ve FINGERUP kısımları aynı kalabilir...)
+                    # Sağ üst pause/menu butonu
+                    menu_rect = pygame.Rect(W - 110, 20, 90, 90)
 
+                    if menu_rect.collidepoint(m_pos):
+                        pygame.mixer.music.stop()
+                        state = "MENU"
+
+            # -------------------------------------------------
+            # FINGERMOTION
+            # -------------------------------------------------
+            if e.type == pygame.FINGERMOTION:
+
+                # Sadece joysticki kontrol eden parmak hareket ettirsin
+                if e.finger_id == touch_id:
+
+                    tx, ty = e.x * W, e.y * H
+
+                    dx = tx - JOY_CENTER[0]
+                    dy = ty - JOY_CENTER[1]
+
+                    dist = math.hypot(dx, dy)
+
+                    # Radius dışına taşırma
+                    if dist > JOY_RADIUS:
+                        angle = math.atan2(dy, dx)
+
+                        tx = JOY_CENTER[0] + math.cos(angle) * JOY_RADIUS
+                        ty = JOY_CENTER[1] + math.sin(angle) * JOY_RADIUS
+
+                    joy_pos = [tx, ty]
+
+            # -------------------------------------------------
+            # FINGERUP
+            # -------------------------------------------------
             if e.type == pygame.FINGERUP:
-                is_touching = False
-                joy_pos = list(JOY_CENTER) # Bırakınca merkeze dönsün
-            if e.type == pygame.QUIT:
-                running = False
-                break
+
+                if e.finger_id == touch_id:
+
+                    touch_id = None
+
+                    is_touching = False
+                    show_joystick = False
+
+                    joy_pos = list(JOY_CENTER)
 
             # --- EDITOR DURUMU OLAYLARI ---
             if state == "EDITOR" and editor:
