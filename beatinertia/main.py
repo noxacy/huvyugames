@@ -1,5 +1,5 @@
 import pygame, math, json, asyncio, sys, os, random
-
+from collections import deque
 vfx_start_time = 0
 vfx_total_duration = 1.0
 vfx_target_bg = [0, 0, 0]
@@ -8,7 +8,6 @@ is_vfx_smooth = False # Başlangıçta geçiş hesaplamasın
 
 # Global veya reset anında tanımla
 start_timer = 1.0  # 1 saniye geri sayım
-restart_timer = 0  # Fail sonrası için
 
 
 if sys.platform == "emscripten":
@@ -65,7 +64,7 @@ screen = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 running = True
 pressed_keys = []
-pygame.display.set_caption("Blockdodge v0.2")
+pygame.display.set_caption("BeatInertia v0.2")
 input_active = False
 input_text = ""
 BTN_CUSTOM = pygame.Rect(W/2 - 150, H/2 + 150, 300, 50)
@@ -79,6 +78,10 @@ is_1hp = False
 is_zen = False
 time_scale = 1.0 # 1.0 normal, 1.5 hızlı, 0.7 yavaş
 
+if is_1hp:
+    restart_timer = 0.5
+else:
+    restart_timer = 1
 
 
 high_scores = {}
@@ -151,10 +154,16 @@ if IS_WEB:
 
 SONGS = {
     "assets/slash_inferno.ogg": {
-        "name": "Slash Inferno - Noxacy Remix (EASY)",
+        "name": "Slash Inferno - Noxacy Remix (VERY EASY)",
         "data": "assets/slash_inferno.json",
         "slow": "assets/slash_inferno_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/slash_inferno_fast.ogg"  # Hızlandırılmış versiyon
+    },
+    "assets/creoflow.ogg": {
+        "name": "Flow - Noxacy Remix (MEDIUM)",
+        "data": "assets/creoflow.json",
+        "slow": "assets/creoflow_slow.ogg", # Yavaşlatılmış versiyon
+        "fast": "assets/creoflow_fast.ogg"  # Hızlandırılmış versiyon
     },
     "assets/dihblaster.ogg": {
         "name": "Sonic Blaster - Noxacy Remix (HARD)",
@@ -162,20 +171,14 @@ SONGS = {
         "slow": "assets/dihblaster_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/dihblaster_fast.ogg"  # Hızlandırılmış versiyon
     },
-    "assets/creoflow.ogg": {
-        "name": "Flow - Noxacy Remix (INSANITY)",
-        "data": "assets/creoflow.json",
-        "slow": "assets/creoflow_slow.ogg", # Yavaşlatılmış versiyon
-        "fast": "assets/creoflow_fast.ogg"  # Hızlandırılmış versiyon
-    },
     "assets/ordih.ogg": {
-        "name": "Animation Warrior Theme - Noxacy Remix (DEMONIC)",
+        "name": "Animation Warrior Theme - Noxacy Remix (INSANITY)",
         "data": "assets/ordih.json",
         "slow": "assets/ordih_slow.ogg", # Yavaşlatılmış versiyon
         "fast": "assets/ordih_fast.ogg"  # Hızlandırılmış versiyon
     }
 }
-current_song_path = list(SONGS.keys())[2]
+current_song_path = list(SONGS.keys())[0]
 state = "MENU"
 
 # Tüm şarkı verilerini oyun açılırken bir kez yükle
@@ -188,15 +191,7 @@ for path, info in SONGS.items():
         print(f"Yükleme hatası ({info['name']}): {e}")
         CACHED_DATA[path] = []
 
-overlay_surface = pygame.Surface((W, H), pygame.SRCALPHA)
 
-def draw_overlay(title, subtitle, color="#ffffff"):
-    # Arka planı hafif karart
-    overlay = pygame.Surface((W, H), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 180))
-    screen.blit(overlay, (0, 0))
-    cached_draw(title, color, (W/2, H/2 - 50), True)
-    cached_draw(subtitle, "#aaaaaa", (W/2, H/2 + 20), True)
 
 def draw_menu():
     screen.fill("#050505")
@@ -291,7 +286,7 @@ class Object:
         self.effect = effect
         self.mainc = col
         self.trail = []  # İzleri tutacak liste
-        self.max_trail = 5
+        self.trail = deque(maxlen=6)
 
     def move(self, current_music_time):
         elapsed = current_music_time - self.spawn_time
@@ -318,10 +313,7 @@ class Object:
         if self in objects: objects.remove(self)
 
     def draw(self, surface, ox=0, oy=0):
-        self.trail.insert(0, (self.pos[0] + ox, self.pos[1] + oy))
-        if len(self.trail) > self.max_trail:
-            self.trail.pop()
-        # --- RENK KORUMA KALKANI ---
+        self.trail.append((x, y))
         try:
             # Renk değerlerini güvenli bir şekilde sayıya çevir ve 0-255 arasına sıkıştır
             r = max(0, min(255, int(self.color[0])))
@@ -361,7 +353,7 @@ class Object:
 BLOCK_FONTS = {}
 
 particles = [] # [ [x, y, vx, vy, color, life], ... ]
-
+BLOCK_SURFACE_CACHE = {}
 
 class Block:
     def __init__(self, center: tuple, size: tuple, color: tuple, spawn_time: float, etime: float, adisplay: float):
@@ -378,6 +370,7 @@ class Block:
         self.current_life = 0
         self.size = size
         self.mode = "OBJECT" # "OBJECT" veya "BLOCK"
+        self.PARTICLE_COUNT = 8 if is_mobile else 18
 
         # FORMÜL DÜZELTME:
         # Bloğun hem genişliğini hem yüksekliğini baz al,
@@ -411,16 +404,22 @@ class Block:
         safe_rgb = (r, g, b)
 
         if not self.dmg:
-            # Hazırlık aşaması (Şeffaf blok)
-            s = pygame.Surface(self.rect.size, pygame.SRCALPHA)
-            s.fill((*safe_rgb, 100)) # (*tuple, alpha) kullanımı en sağlamıdır
-            surface.blit(s, sr)
+            cache_key = (self.rect.w, self.rect.h, safe_rgb)
+
+            if cache_key not in BLOCK_SURFACE_CACHE:
+                surf = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+                surf.fill((*safe_rgb, 100))
+                BLOCK_SURFACE_CACHE[cache_key] = surf
+
+            surface.blit(BLOCK_SURFACE_CACHE[cache_key], sr)
             
             rem = self.adisplay - self.current_life
             if rem > 0:
                 luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
                 txt_col = (0, 0, 0) if luminance > 0.5 else (255, 255, 255)
-                cached_draw(f"{rem:.1f}", txt_col, sr.center, True)
+                txt = self.font.render(f"{rem:.1f}", True, txt_col)
+                txt_rect = txt.get_rect(center=sr.center)
+                surface.blit(txt, txt_rect)
         else:
             # Aktif hasar aşaması
             pygame.draw.rect(surface, safe_rgb, sr)
@@ -447,11 +446,11 @@ class Block:
             # Blok silinirken burayı çalıştır:
             p_color = list(self.color) if isinstance(self.color, (list, tuple)) else self.color
         
-            for _ in range(18): # Sayıyı 15'e çıkardık
+            for _ in range(PARTICLE_COUNT): # Sayıyı 15'e çıkardık
                 particles.append([
                     self.rect.centerx, self.rect.centery, 
-                    random.uniform(-12, 12), # X hızı çok daha yüksek
-                    random.uniform(-12, 12), # Y hızı çok daha yüksek
+                    random.randint(-24, 24),
+                    random.randint(-24, 24),
                     p_color, 
                     1.0 # Life (Ömür)
                 ])
@@ -466,6 +465,9 @@ PROP_KEYS = {
 target_bg = [0, 0, 0]
 target_player = [255, 255, 255]
 
+font = pygame.font.SysFont(None, 36)
+small_font = pygame.font.SysFont(None, 24)
+
 class LevelEditor:
     def __init__(self):
         self.route = []
@@ -476,6 +478,7 @@ class LevelEditor:
         self.mode = "OBJECT"
         self.selected_idx = -1
         self.prop_idx = 0 # Hangi özelliği düzenliyoruz? (size, time vb.)
+        self.preview_surf = pygame.Surface((W, H))
 
     def add_element(self, pos, obj_type=None):
         if obj_type is None:
@@ -732,8 +735,7 @@ class LevelEditor:
             else:
                 self.current_time += dt
     def draw(self, screen):
-        preview_surf = pygame.Surface((W, H))
-        
+        preview_surf = self.preview_surf
         # --- DRAW ve SELECT_AT içindeki hesaplama ---
         calc_spawn_times = []
         cumulative_time = 0.0
@@ -751,10 +753,10 @@ class LevelEditor:
         vfx_list.sort(key=lambda x: float(x.get("time", 0)))
 
         for v in vfx_list:
-            v_start = float(v.get("time", 0))
+            v_start = float(v.get("time", 0)) / time_scale
             if self.current_time < v_start: break 
 
-            v_dur = float(v.get("time_duration", 1.0))
+            v_dur = float(v.get("time_duration", 1.0)) / time_scale
             target_bg = v.get("bg_color", [0, 0, 0])
             target_p = v.get("p_color", [255, 255, 255])
             is_smooth = v.get("smooth", False) in [True, 1, "True", "1"]
@@ -822,7 +824,9 @@ class LevelEditor:
                         alpha_col = [int(c * 0.3) for c in obj["color"]]
                         pygame.draw.rect(preview_surf, alpha_col, rect)
                         # Blok yazısı rect.center kullandığı için güvenli
-                        cached_draw(f"{adisplay - elapsed:.1f}", (255, 255, 255), rect.center, True, surface=preview_surf)
+                        txt = font.render(f"{adisplay - elapsed:.1f}", True, (255,255,255))
+                        txt_rect = txt.get_rect(center=rect.center)
+                        preview_surf.blit(txt, txt_rect)
                     else:
                         pygame.draw.rect(preview_surf, obj["color"], rect)
 
@@ -845,7 +849,7 @@ class LevelEditor:
         available_w = W - SIDEBAR_W
         available_h = H - self.timeline_h
         # Preview'i sidebar hariç kalan alana sığacak şekilde ölçekle
-        scaled_preview = pygame.transform.smoothscale(preview_surf, (available_w, available_h))
+        scaled_preview = pygame.transform.scale(preview_surf, (available_w, available_h))
         screen.blit(scaled_preview, (0, 0))
 
         # 2. Properties Paneli (Sağ Panel)
@@ -890,11 +894,15 @@ class LevelEditor:
                     else: val = obj.get(key, "N/A")
 
                 # Her bir özelliği tek tek ekrana yazdır (Döngünün İÇİNDE)
-                cached_draw(f"{prefix}{key}: {val}", c, (W - SIDEBAR_W + 30, 70 + i * 35))
+                txt = font.render(f"{prefix}{key}: {val}", True, c)
+                screen.blit(txt, (W - SIDEBAR_W + 30, 70 + i * 35))
             
             # Alt Bilgi (Döngü bittikten sonra bir kez)
             msg = "[TAB] Select, [+/-] Change, [DEL] Delete"
-            cached_draw(msg, (100, 255, 100), (W - SIDEBAR_W + 20, H - 50), False, pygame.font.SysFont(None, 24))
+            small_font = pygame.font.SysFont(None, 24)
+
+            txt = small_font.render(msg, True, (100,255,100))
+            screen.blit(txt, (W - SIDEBAR_W + 20, H - 50))
         else:
             cached_draw("Select an object (A->Add", (100, 100, 100), (W - SIDEBAR_W + 20, 100))
 
@@ -911,7 +919,9 @@ class LevelEditor:
             sx = start_x + (s * self.zoom)
             if 0 < sx < available_w:
                 pygame.draw.line(screen, (60, 60, 60), (sx, tl_y + 40), (sx, H))
-                cached_draw(f"{s}s", (80, 80, 80), (sx, tl_y + 20), True)
+                txt = font.render(f"{s}s", True, (80, 80, 80))
+                rect = txt.get_rect(center=(sx, tl_y + 20))
+                screen.blit(txt, rect)
 
         # Objelerin Timeline Üzerindeki İşaretleri
         for i, o in enumerate(self.route):
@@ -969,18 +979,50 @@ def get_joy_axis():
 
 text_cache = {}
 GAME_FONT = pygame.font.SysFont(None, 35)
-def cached_draw(text, color, position, center=False, font=GAME_FONT, surface=None):
+def cached_draw(text, color, position, center=False, font=GAME_FONT, surface=None, outline_color=(0, 0, 0), outline_thickness=0):
+    """
+    Belirli metinleri konturlu (outline) veya kontursuz çizen geliştirilmiş, önbellekli çizim fonksiyonu.
+    
+    Konturlu çizim sadece outline_thickness > 0 ise yapılır.
+    """
     # Eğer surface gönderilmemişse varsayılan olarak ana ekranı (screen) kullan
     if surface is None:
         surface = screen
         
-    key = (str(text), color, font) # Fontu da key'e eklemek farklı fontlarda çakışmayı önler
-    if key not in text_cache: 
-        text_cache[key] = font.render(str(text), True, color).convert_alpha()
+    text_str = str(text)
+    # Önbellek anahtarını kontur ayarlarını da içerecek şekilde genişletiyoruz
+    key = (text_str, color, font, outline_color, outline_thickness)
     
+    if key not in text_cache:
+        # 1. Ana metin yüzeyini oluştur (kontursuz)
+        main_text_surf = font.render(text_str, True, color).convert_alpha()
+        
+        # Eğer kontur istenmiyorsa sadece ana metni önbelleğe al
+        if outline_thickness <= 0:
+            text_cache[key] = main_text_surf
+        else:
+            # 2. Kontur için genişletilmiş yeni bir yüzey oluştur
+            text_w, text_h = main_text_surf.get_size()
+            final_w = text_w + (outline_thickness * 2)
+            final_h = text_h + (outline_thickness * 2)
+            
+            # Şeffaf, konturlu ana yüzey
+            final_surf = pygame.Surface((final_w, final_h), pygame.SRCALPHA)
+            
+            # 3. Kontur metinlerini 8 yöne çiz (kaydırarak)
+            outline_surf = font.render(text_str, True, outline_color)
+            for dx, dy in [(-1, -1), ( 0, -1), ( 1, -1),
+                           (-1,  0),           ( 1,  0),
+                           (-1,  1), ( 0,  1), ( 1,  1)]:
+                outline_pos = (dx * outline_thickness + outline_thickness, dy * outline_thickness + outline_thickness)
+                final_surf.blit(outline_surf, outline_pos)
+            
+            # 4. Ana metni tam ortaya çiz
+            final_surf.blit(main_text_surf, (outline_thickness, outline_thickness))
+            text_cache[key] = final_surf
+    
+    # Position işlemleri (Genişletilmiş final yüzeyini kullan)
     surf = text_cache[key]
-    
-    # Position işlemleri
     if center:
         rect = surf.get_rect(center=position)
     else:
@@ -1026,8 +1068,9 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, bg1, bg2, is
     for obj in objects:
         obj.draw(screen, ox, oy)
 
-    # main döngüsü içinde çizim sırasının en sonunda olsun (Oyuncudan hemen önce)
-    for p in particles[:]:
+    i = 0
+    while i < len(particles):
+        p = particles[i]
         # Konumu güncelle
         p[0] += p[2] 
         p[1] += p[3]
@@ -1040,7 +1083,7 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, bg1, bg2, is
         p[5] -= 0.025 
         
         if p[5] <= 0:
-            particles.remove(p)
+            particles.pop(i)
         else:
             # Boyut Ayarı: Başlangıçta 15 pikselden başlasın (Blok parçası gibi)
             # s = int(15 * p[5]) yerine sabit bir değer + ömür çarpanı:
@@ -1072,20 +1115,42 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, bg1, bg2, is
 
     # 6. Kullanıcı Arayüzü (UI)
     
-    # --- HP Yazısı ---
-    hp_color = (0, 255, 0) if hp > 2 else (255, 0, 0)
-    cached_draw(f"HP: {int(hp)}", hp_color, (65 + ox, 35 + oy))
+
+    if hp==10:
+        hp_color="#00ff00"
+    elif hp==9:
+        hp_color="#aaff00"
+    elif hp==8:
+        hp_color="#abff00"
+    elif hp==7:
+        hp_color="#bbff00"
+    elif hp==6:
+        hp_color="#bcff00"
+    elif hp==5:
+        hp_color="#ffff00"
+    elif hp==4:
+        hp_color="#ffed00"
+    elif hp==3:
+        hp_color="#ffdc00"
+    elif hp==2:
+        hp_color="#ffba00"
+    elif hp==1:
+        hp_color="#ffa000"
+    else:
+        hp_color="#ff0000"
+
+    cached_draw(f"HP: {int(hp)}", hp_color, (65 + ox, 35 + oy), outline_thickness=2)
 
     # --- Zaman ve Yüzde Bilgisi ---
     m, s = divmod(int(current_time), 60)
     sm, ss = divmod(int(TOTAL_TIME), 60)
     # Ortadaki zaman yazısı
-    cached_draw(f"{m:02d}:{s:02d} / {sm:02d}:{ss:02d}", "#ffffff", (W/2 + ox, 35 + oy), True)
+    cached_draw(f"{m:02d}:{s:02d} / {sm:02d}:{ss:02d}", "#ffffff", (W/2 + ox, 35 + oy), True, outline_thickness=2)
     
     # Ortadaki yüzde yazısı
     progress_ratio = min(1.0, current_time / max(1, TOTAL_TIME))
     progress_percent = round(progress_ratio * 100, 1)
-    cached_draw(f"%{progress_percent}", "#ffffff", (W/2 + ox, 70 + oy), True)
+    cached_draw(f"%{progress_percent}", "#ffffff", (W/2 + ox, 70 + oy), True, outline_thickness=2)
 
     # --- PROGRESS BAR (İlerleme Çubuğu) ---
     bar_w, bar_h = 400, 10
@@ -1110,8 +1175,8 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, bg1, bg2, is
         overlay = pygame.Surface((W, H), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 150))
         screen.blit(overlay, (0, 0))
-        cached_draw(f"You died at {progress_percent}%", "#ff4444", (W/2, H/2), True)
-        cached_draw("Restarting...", "#ffffff", (W/2, H/2 + 50), True)
+        cached_draw(f"You died at {progress_percent}%", "#ff4444", (W/2, H/2), True, outline_thickness=2)
+        cached_draw("Restarting...", "#ffffff", (W/2, H/2 + 50), True, outline_thickness=2)
 
     if state == "WIN_SCREEN":
         overlay = pygame.Surface((W, H), pygame.SRCALPHA)
@@ -1555,45 +1620,44 @@ async def main():
                 route_index += 1
 
             # --- GÖRSEL GEÇİŞLER (EDİTÖR İLE %100 AYNI MANTIK) ---
-            temp_bg = [0,0,0]
-            temp_p = [255, 255, 255]
 
             vfx_list = [o for o in route if o.get("type", "").lower() == "vfx"]
-            for v in vfx_list:
-                if v.get("time") == "N/A" or v.get("time") is None:
-                    v["time"] = 0.0
+            temp_bg = [0,0,0]
+            temp_p = [255,255,255]
 
-            vfx_list.sort(key=lambda x: float(x.get("time", 0)))
+            prev_bg = temp_bg[:]
+            prev_p = temp_p[:]
 
             for v in vfx_list:
-                v_start = float(v.get("time", 0))
-                
-                # Oyunun müzik süresi bu VFX'e gelmediyse dur
+                v_start = float(v.get("time", 0)) / time_scale
+
                 if music_time < v_start:
-                    break 
-
-                v_dur = float(v.get("time_duration", 1.0))
-                target_bg = v.get("bg_color", [0, 0, 0])
-                target_p = v.get("p_color", [255, 255, 255])
-                
-                is_smooth = v.get("smooth", False)
-                if is_smooth in [1, "1", True, "True"]:
-                    is_smooth = True
-                else:
-                    is_smooth = False
-
-                # GEÇİŞ AŞAMASI
-                if is_smooth and v_dur > 0 and music_time < (v_start + v_dur):
-                    progress = (music_time - v_start) / v_dur
-                    for c in range(3):
-                        temp_bg[c] += (target_bg[c] - temp_bg[c]) * progress
-                        temp_p[c] += (target_p[c] - temp_p[c]) * progress
                     break
-                
-                # SABİTLEME AŞAMASI
+
+                v_dur = float(v.get("time_duration", 1.0)) / time_scale
+
+                target_bg = v.get("bg_color", [0,0,0])
+                target_p = v.get("p_color", [255,255,255])
+
+                is_smooth = v.get("smooth", False)
+
+                if is_smooth and music_time < (v_start + v_dur):
+
+                    progress = (music_time - v_start) / v_dur
+                    progress = max(0.0, min(1.0, progress))
+
+                    for c in range(3):
+                        temp_bg[c] = prev_bg[c] + (target_bg[c] - prev_bg[c]) * progress
+                        temp_p[c] = prev_p[c] + (target_p[c] - prev_p[c]) * progress
+
+                    break
+
                 else:
                     temp_bg = list(target_bg)
                     temp_p = list(target_p)
+
+                prev_bg = list(target_bg)
+                prev_p = list(target_p)
 
             # Hesaplanan kusursuz renkleri oyuna aktar
             bg_color_1 = temp_bg
@@ -1656,21 +1720,61 @@ async def main():
             draw_menu()
             pygame.display.flip()
 
-        # --- Yeni State Mantıkları ---
-        if state == "FAIL_SCREEN":
+        elif state == "FAIL_SCREEN":
             restart_timer -= dt
+
+            draw(
+                objects,
+                player,
+                hp,
+                show_joystick,
+                joy_pos,
+                music_time,
+                bg_color_1,
+                (0,0,0),
+                False,
+                0,
+                player_color,
+                shake_amount,
+                damage_flash
+            )
+
             if restart_timer <= 0:
                 progress_ratio = min(1.0, music_time / max(1, TOTAL_TIME))
                 progress_percent = round(progress_ratio * 100, 1)
-                # Oyun resetleme fonksiyonunu çağır (değişkenleri sıfırla)
-                save_score(current_song_path, progress_percent)
-                start_trigger = True
-                start_timer = 1.0 # Başlarken de 1 sn bekle
 
-        if state == "WIN_SCREEN":
-            # Win ekranında oyuncu bir tuşa basana kadar bekleyebilir
-            save_score(current_song_path, progress_percent)
-            state == "MENU"
+                save_score(current_song_path, progress_percent)
+
+                if is_1hp:
+                    restart_timer = 0.5
+                else:
+                    restart_timer = 1
+                start_trigger = True
+                start_timer = 1.0
+
+
+        elif state == "WIN_SCREEN":
+
+            draw(
+                objects,
+                player,
+                hp,
+                show_joystick,
+                joy_pos,
+                music_time,
+                bg_color_1,
+                (0,0,0),
+                False,
+                0,
+                player_color,
+                shake_amount,
+                damage_flash
+            )
+
+            for e in events:
+                if e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_ESCAPE:
+                        state = "MENU"
 
     # main içindeki EDITOR durumunda:
     # --- main() EN ALT KISIMDAKİ EDİTÖR DÖNGÜSÜ ---
