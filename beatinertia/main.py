@@ -285,8 +285,8 @@ class Object:
         self.blast = blast
         self.effect = effect
         self.mainc = col
-        self.trail = []  # İzleri tutacak liste
         self.trail = deque(maxlen=6)
+        self.max_trail = 6
 
     def move(self, current_music_time):
         elapsed = current_music_time - self.spawn_time
@@ -313,42 +313,82 @@ class Object:
         if self in objects: objects.remove(self)
 
     def draw(self, surface, ox=0, oy=0):
-        self.trail.append((x, y))
+
+        self.trail.appendleft(
+            (self.pos[0] + ox, self.pos[1] + oy)
+        )
+
+        # RENK DÜZELTME
         try:
-            # Renk değerlerini güvenli bir şekilde sayıya çevir ve 0-255 arasına sıkıştır
-            r = max(0, min(255, int(self.color[0])))
-            g = max(0, min(255, int(self.color[1])))
-            b = max(0, min(255, int(self.color[2])))
-        except (TypeError, IndexError, ValueError):
-            # Eğer renk verisi bozuksa varsayılan olarak gri yap (Hata vermesini engeller)
-            r, g, b = 150, 150, 150
-        
+
+            # HEX STRING İSE
+            if isinstance(self.color, str):
+
+                c = self.color.lstrip("#")
+
+                if len(c) == 6:
+                    r = int(c[0:2], 16)
+                    g = int(c[2:4], 16)
+                    b = int(c[4:6], 16)
+                else:
+                    r, g, b = 255, 255, 255
+
+            # RGB LIST/TUPLE İSE
+            else:
+                r = max(0, min(255, int(self.color[0])))
+                g = max(0, min(255, int(self.color[1])))
+                b = max(0, min(255, int(self.color[2])))
+
+        except:
+            r, g, b = 255, 255, 255
+
         safe_rgb = (r, g, b)
 
-        # İzleri çiz (Gittikçe küçülen kareler)
+        # TRAILLER
         for i, p in enumerate(self.trail):
-            trail_size = self.size * (1 - (i / self.max_trail))
-            if trail_size > 1:
-                # RENK KONTROLÜ: Eğer renk liste değilse (hex string ise) direkt onu kullan
-                if isinstance(self.color, (list, tuple)):
-                    t_col = [max(0, c - 50) for c in self.color]
-                else:
-                    t_col = self.color # String ise olduğu gibi bırak (şeffaflık zor olur)
-                
-                t_rect = pygame.Rect(0, 0, trail_size, trail_size)
-                t_rect.center = p
-                # 'screen' yerine 'surface' kullanıyoruz
-                pygame.draw.rect(surface, t_col, t_rect)
 
-        # Ana mermiyi çiz
+            progress = 1 - (i / self.max_trail)
+
+            trail_size = max(2, int(self.size * progress))
+
+            trail_col = (
+                max(0, int(r * progress)),
+                max(0, int(g * progress)),
+                max(0, int(b * progress))
+            )
+
+            t_rect = pygame.Rect(0, 0, trail_size, trail_size)
+            t_rect.center = (int(p[0]), int(p[1]))
+
+            pygame.draw.rect(surface, trail_col, t_rect)
+
+        # ANA OBJECT
         sr = self.rect.copy()
-        sr.x += ox; sr.y += oy
-        pygame.draw.rect(surface, self.color, sr)
+        sr.x += ox
+        sr.y += oy
+
+        pygame.draw.rect(surface, safe_rgb, sr)
 
         if self.blast:
-            luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-            txt_col = (0, 0, 0) if luminance > 0.5 else (255, 255, 255)
-            cached_draw(str(self.blast), txt_col, sr.center, True)
+
+            luminance = (
+                0.299 * r +
+                0.587 * g +
+                0.114 * b
+            ) / 255
+
+            txt_col = (
+                (0, 0, 0)
+                if luminance > 0.5
+                else (255, 255, 255)
+            )
+
+            cached_draw(
+                str(self.blast),
+                txt_col,
+                sr.center,
+                True
+            )
 
 BLOCK_FONTS = {}
 
@@ -443,16 +483,31 @@ class Block:
             self.a = 0
             self.set_col()
             shake_amount = 5
-            # Blok silinirken burayı çalıştır:
-            p_color = list(self.color) if isinstance(self.color, (list, tuple)) else self.color
-        
-            for _ in range(PARTICLE_COUNT): # Sayıyı 15'e çıkardık
+
+            # HER ZAMAN ORİJİNAL RENK
+            p_color = (
+                int(self.maincolor[0]),
+                int(self.maincolor[1]),
+                int(self.maincolor[2])
+            )
+
+            for _ in range(self.PARTICLE_COUNT):
+
+                # BLOĞUN İÇİNDE RANDOM ÇIKIŞ NOKTASI
+                spawn_x = random.randint(self.rect.left, self.rect.right)
+                spawn_y = random.randint(self.rect.top, self.rect.bottom)
+
+                # RANDOM PARÇA BOYUTU
+                size = random.randint(4, 12)
+
                 particles.append([
-                    self.rect.centerx, self.rect.centery, 
-                    random.randint(-24, 24),
-                    random.randint(-24, 24),
-                    p_color, 
-                    1.0 # Life (Ömür)
+                    spawn_x,                     # x
+                    spawn_y,                     # y
+                    random.uniform(-18, 18),    # vx
+                    random.uniform(-18, 18),    # vy
+                    p_color,                    # color
+                    1.0,                        # life
+                    size                        # size
                 ])
 # --- EDİTÖR YARDIMCI SABİTLERİ ---
 SIDEBAR_W = 300
@@ -1071,29 +1126,40 @@ def draw(objects, player, hp, show_joystick, joy_pos, current_time, bg1, bg2, is
     i = 0
     while i < len(particles):
         p = particles[i]
-        # Konumu güncelle
-        p[0] += p[2] 
+
+        p[0] += p[2]
         p[1] += p[3]
-        
-        # Hava sürtünmesi (Hız yavaş yavaş azalsın ama başta çok hızlı olsunlar)
-        p[2] *= 0.96
-        p[3] *= 0.96
-        
-        # Ömür tüketimi (Biraz daha yavaş ölsünler ki görünsünler)
-        p[5] -= 0.025 
-        
+
+        p[2] *= 0.94
+        p[3] *= 0.94
+
+        p[5] -= 0.03
+
         if p[5] <= 0:
             particles.pop(i)
-        else:
-            # Boyut Ayarı: Başlangıçta 15 pikselden başlasın (Blok parçası gibi)
-            # s = int(15 * p[5]) yerine sabit bir değer + ömür çarpanı:
-            s = max(4, int(12 * p[5])) 
-            
-            # Renk: Karartmayı kaldırdık, bloğun orijinal rengi neyse o!
-            draw_col = p[4] 
-            
-            # Çizim (Kamera ox, oy değerlerini eklemeyi unutma)
-            pygame.draw.rect(screen, draw_col, (int(p[0] + ox), int(p[1] + oy), s, s))
+            continue
+
+        life = p[5]
+        size = max(1, int(p[6] * life))
+
+        draw_col = (
+            int(p[4][0] * life),
+            int(p[4][1] * life),
+            int(p[4][2] * life)
+        )
+
+        pygame.draw.rect(
+            screen,
+            draw_col,
+            (
+                int(p[0] + ox),
+                int(p[1] + oy),
+                size,
+                size
+            )
+        )
+
+        i += 1
 
     # 5. Oyuncuyu Çiz (Daire şeklinde)
     player_pos = (int(player.x + ox), int(player.y + oy))
